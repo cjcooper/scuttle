@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="about.js" defer></script>
+</head>
+<body class="about-app">
+  <header class="about-head">
+    <div class="tabs">
+      <button class="tab active" data-tab="about">About</button>
+      <button class="tab" data-tab="license">License</button>
+      <button class="tab" data-tab="third-party" id="third-party-tab">Third-party licenses</button>
+    </div>
+  </header>
+  <div class="about-body">
+    <section class="about-pane active" id="pane-about">
+      <div class="about-main">
+        <img class="about-icon" src="icon.png" alt="" />
+        <h1 id="about-name"></h1>
+        <p class="muted" id="about-version"></p>
+        <p id="about-description"></p>
+        <p class="muted" id="about-maker"></p>
+        <p><a href="#" id="about-source" hidden>Source code</a><span id="about-source-sep" hidden> · </span><a href="#" id="about-licenses">Third-party licenses</a></p>
+        <section class="credits">
+          <h3>Built on</h3>
+          <p id="about-built"></p>
+        </section>
+      </div>
+    </section>
+    <section class="about-pane" id="pane-license">
+      <pre class="about-text license" id="about-license"></pre>
+    </section>
+    <section class="about-pane" id="pane-third-party">
+      <div class="third-party">
+        <p class="muted" id="tp-intro"></p>
+        <input type="search" id="tp-filter" placeholder="Filter by name or license" />
+        <div class="about-chips" id="tp-chips"></div>
+        <div id="tp-list"></div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

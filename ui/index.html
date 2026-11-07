@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Container Desktop</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">Container Desktop</div>
+    <nav>
+      <button class="nav active" data-view="runtime">Runtime</button>
+      <button class="nav" data-view="images">Images</button>
+      <button class="nav" data-view="containers">Containers</button>
+    </nav>
+    <div class="status-pill" id="status-pill">
+      <span class="dot" id="status-dot"></span>
+      <span id="status-text">Checking…</span>
+    </div>
+  </aside>
+
+  <main>
+    <!-- Runtime -->
+    <section class="view active" id="view-runtime">
+      <header><h1>Runtime</h1></header>
+      <div class="card">
+        <div class="row">
+          <label>Provider
+            <select id="provider-select"></select>
+          </label>
+          <label>Profile
+            <select id="profile-select"></select>
+          </label>
+          <button id="refresh-profiles" class="ghost" title="Refresh">↻</button>
+        </div>
+        <p class="hint" id="provider-hint"></p>
+      </div>
+      <div class="card">
+        <div class="status-grid" id="status-grid"></div>
+        <div class="row actions">
+          <button id="vm-start">Start</button>
+          <button id="vm-stop" class="secondary">Stop</button>
+          <button id="vm-restart" class="secondary">Restart</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Profiles</h2>
+        <table>
+          <thead><tr><th>Name</th><th>State</th><th>Arch</th><th>CPUs</th><th>Memory</th><th>Disk</th><th>Runtime / Detail</th></tr></thead>
+          <tbody id="profiles-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Images -->
+    <section class="view" id="view-images">
+      <header>
+        <h1>Images</h1>
+        <div class="tabs" data-group="images">
+          <button class="tab active" data-tab="images-local">Local</button>
+          <button class="tab" data-tab="images-build">Build</button>
+        </div>
+      </header>
+
+      <div class="subview active" id="images-local">
+        <div class="card">
+          <h2>Pull</h2>
+          <form id="pull-form">
+            <div class="row">
+              <input class="grow" id="pull-image" placeholder="registry/repository:tag" list="image-names" />
+              <button type="submit" id="pull-submit">Pull</button>
+            </div>
+          <div class="row aws-row" id="pull-aws" hidden>
+            <label>AWS profile
+              <select id="pull-aws-profile"></select>
+            </label>
+            <button type="button" class="secondary small" id="pull-aws-sso" title="aws sso login --profile …">Sign in (SSO)</button>
+            <span class="hint" id="pull-aws-hint"></span>
+          </div>
+          </form>
+        </div>
+        <div class="card">
+          <h2>Clean up</h2>
+          <div class="usage" id="disk-usage"></div>
+          <div class="row actions">
+            <button id="prune-dangling">Remove dangling images</button>
+            <button id="prune-unused" class="danger">Remove all unused images</button>
+            <button id="prune-cache" class="secondary">Prune build cache</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="row">
+            <input type="search" class="grow" id="images-filter" placeholder="Filter images…" />
+            <label class="check"><input type="checkbox" id="force-remove" /> Force</label>
+            <button id="images-remove" class="danger" disabled>Remove selected</button>
+            <button id="images-refresh" class="ghost" title="Refresh">↻</button>
+          </div>
+          <table>
+            <thead><tr><th><input type="checkbox" id="images-all" /></th><th>Repository</th><th>Tag</th><th>ID</th><th>Size</th><th>Created</th><th>In use</th><th></th></tr></thead>
+            <tbody id="images-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="subview" id="images-build">
+        <form class="card form" id="build-form">
+          <label>Build context
+            <div class="row">
+              <input id="build-context" required placeholder="/path/to/project" />
+              <button type="button" id="pick-context" class="secondary">Choose…</button>
+            </div>
+          </label>
+          <label>Dockerfile <span class="hint">(defaults to Dockerfile in context)</span>
+            <div class="row">
+              <input id="build-dockerfile" placeholder="Dockerfile" />
+              <button type="button" id="pick-dockerfile" class="secondary">Choose…</button>
+            </div>
+          </label>
+          <div class="row">
+            <label class="grow">Tags <span class="hint">(comma separated)</span>
+              <input id="build-tags" placeholder="myapp:latest" />
+            </label>
+            <label>Platform
+              <input id="build-platform" placeholder="linux/arm64" list="platforms" />
+            </label>
+            <label>Target stage
+              <input id="build-target" />
+            </label>
+          </div>
+          <label>Build args <span class="hint">(one KEY=VALUE per line)</span>
+            <textarea id="build-args" rows="3"></textarea>
+          </label>
+          <div class="row">
+            <label class="check"><input type="checkbox" id="build-nocache" /> No cache</label>
+            <label class="check"><input type="checkbox" id="build-pull" /> Always pull base images</label>
+            <span class="grow"></span>
+            <button type="submit" id="build-submit">Build</button>
+          </div>
+        </form>
+        <div class="card">
+          <h2>Build output</h2>
+          <pre class="log" id="build-log"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Containers -->
+    <section class="view" id="view-containers">
+      <header>
+        <h1>Containers</h1>
+        <div class="tabs" data-group="containers">
+          <button class="tab active" data-tab="containers-list">Containers</button>
+          <button class="tab" data-tab="containers-run">Run</button>
+        </div>
+      </header>
+
+      <div class="subview active" id="containers-list">
+        <div class="card">
+          <div class="row">
+            <input type="search" class="grow" id="containers-filter" placeholder="Filter containers…" />
+            <label class="check"><input type="checkbox" id="containers-running" checked /> Running only</label>
+            <button id="containers-refresh" class="ghost" title="Refresh">↻</button>
+          </div>
+          <table>
+            <thead><tr><th>Name</th><th>Image</th><th>State</th><th>Status</th><th>Ports</th><th></th></tr></thead>
+            <tbody id="containers-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="subview" id="containers-run">
+        <div class="card">
+          <h2>Paste a docker run command</h2>
+          <div class="row">
+            <input class="grow mono" id="paste-command" placeholder="docker container run -it --rm --user root --entrypoint /bin/bash image:tag" />
+            <button type="button" id="paste-parse" class="secondary">Fill form</button>
+          </div>
+        </div>
+        <form class="card form" id="run-form">
+          <div class="row">
+            <label class="grow">Image
+              <input id="run-image" required list="image-names" placeholder="registry/repository:tag" />
+            </label>
+            <label>Name
+              <input id="run-name" placeholder="(random)" />
+            </label>
+          </div>
+          <div class="row aws-row" id="run-aws" hidden>
+            <label>AWS profile
+              <select id="run-aws-profile"></select>
+            </label>
+            <button type="button" class="secondary small" id="run-aws-sso" title="aws sso login --profile …">Sign in (SSO)</button>
+            <span class="hint" id="run-aws-hint"></span>
+          </div>
+          <div class="row">
+            <label>User
+              <select id="run-user-mode">
+                <option value="">Image default</option>
+                <option value="root">root</option>
+                <option value="host">My user (uid:gid)</option>
+                <option value="custom">Custom…</option>
+              </select>
+            </label>
+            <label id="run-user-custom-wrap" hidden>Custom user
+              <input id="run-user-custom" placeholder="www-data or 1000:1000" />
+            </label>
+            <label>Entrypoint
+              <input id="run-entrypoint" placeholder="/bin/bash" list="shells" />
+            </label>
+            <label class="grow">Command <span class="hint">(shell-style words)</span>
+              <input id="run-command" class="mono" />
+            </label>
+          </div>
+          <div class="row">
+            <label class="grow">Ports <span class="hint">(one per line, host:container)</span>
+              <textarea id="run-ports" rows="2" placeholder="8080:80"></textarea>
+            </label>
+            <label class="grow">Environment <span class="hint">(KEY=VALUE per line)</span>
+              <textarea id="run-env" rows="2"></textarea>
+            </label>
+            <label class="grow">Volumes <span class="hint">(host:container per line)</span>
+              <textarea id="run-volumes" rows="2"></textarea>
+            </label>
+          </div>
+          <div class="row">
+            <label>Working dir <input id="run-workdir" /></label>
+            <label>Platform <input id="run-platform" list="platforms" /></label>
+            <label>Network <input id="run-network" placeholder="bridge" /></label>
+            <label class="grow">Extra args <span class="hint">(raw)</span>
+              <input id="run-extra" class="mono" placeholder="--privileged --init" />
+            </label>
+          </div>
+          <div class="row">
+            <label class="check"><input type="radio" name="run-mode" value="interactive" checked /> Interactive (shell window)</label>
+            <label class="check"><input type="radio" name="run-mode" value="detached" /> Detached</label>
+            <label class="check"><input type="checkbox" id="run-rm" checked /> Remove when stopped (--rm)</label>
+          </div>
+          <pre class="log preview" id="run-preview"></pre>
+          <div class="row actions">
+            <input id="preset-name" placeholder="Preset name" />
+            <button type="button" id="preset-save" class="secondary">Save preset</button>
+            <span class="grow"></span>
+            <button type="button" id="run-copy" class="ghost">Copy command</button>
+            <button type="submit" id="run-submit">Run</button>
+          </div>
+        </form>
+        <div class="card">
+          <h2>Presets</h2>
+          <table>
+            <thead><tr><th>Name</th><th>Command</th><th></th></tr></thead>
+            <tbody id="presets-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <datalist id="image-names"></datalist>
+    <datalist id="platforms">
+      <option value="linux/arm64"></option>
+      <option value="linux/amd64"></option>
+      <option value="linux/amd64,linux/arm64"></option>
+    </datalist>
+    <datalist id="shells">
+      <option value="/bin/bash"></option>
+      <option value="/bin/sh"></option>
+      <option value="/bin/zsh"></option>
+      <option value="/bin/ash"></option>
+    </datalist>
+
+    <details class="activity" id="activity">
+      <summary>Activity <span id="activity-count"></span></summary>
+      <pre class="log" id="activity-log"></pre>
+    </details>
+  </main>
+
+  <div class="toast" id="toast"></div>
+</body>
+</html>

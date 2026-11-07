@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en" spellcheck="false">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shell</title>
+  <link rel="stylesheet" href="vendor/xterm/xterm.css" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Terminal emulator, vendored (see vendor/xterm/README.md). -->
+  <script src="vendor/xterm/xterm.js"></script>
+  <script src="vendor/xterm/addon-fit.js"></script>
+  <script src="shell.js" defer></script>
+</head>
+<body class="shell-app">
+  <header class="shell-header">
+    <div class="shell-title">
+      <span id="shell-heading">Connecting…</span>
+      <code id="shell-command" class="shell-command"></code>
+    </div>
+    <div class="shell-tools">
+      <div class="segmented" id="user-seg" title="User to run the shell as">
+        <button data-user="">Default</button>
+        <button data-user="root">root</button>
+        <button data-user="host" title="Your host uid:gid">Me</button>
+        <button data-user="custom">Custom</button>
+      </div>
+      <input id="custom-user" placeholder="user or uid:gid" hidden />
+      <select id="shell-select" title="Shell">
+        <option value="auto">auto (bash → sh)</option>
+        <option value="/bin/bash">/bin/bash</option>
+        <option value="/bin/sh">/bin/sh</option>
+        <option value="/bin/zsh">/bin/zsh</option>
+        <option value="/bin/ash">/bin/ash</option>
+      </select>
+      <button id="reconnect" class="secondary small">Reconnect</button>
+      <button id="pop-out" class="ghost small" title="Open this session in your terminal app">Pop out ↗</button>
+    </div>
+  </header>
+  <div class="shell-ended" id="shell-ended" hidden></div>
+  <div class="shell-term" id="term"></div>
+</body>
+</html>

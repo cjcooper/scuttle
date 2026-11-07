@@ -1,0 +1,21 @@
+Third-party notices for Container Desktop
+
+Container Desktop includes the software listed below. Each license is reproduced
+with the crates it covers.
+
+{{#each overview}}
+  {{count}} crate(s) under {{{name}}}
+{{/each}}
+
+{{#each licenses}}
+================================================================================
+{{{name}}}
+
+Used by:
+{{#each used_by}}
+  {{{crate.name}}} {{crate.version}}{{#if crate.repository}} ({{{crate.repository}}}){{/if}}
+{{/each}}
+
+{{{text}}}
+
+{{/each}}
