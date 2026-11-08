@@ -76,6 +76,7 @@ function showView(name) {
   if (name === "containers") { loadContainers(); renderPresets(); }
   if (name === "runtime") loadProfiles();
   if (name === "colima") window.loadColimaView?.();
+  if (name === "history") loadHistory();
 }
 
 // Sub-tabs inside a view (Images: Local/Build, Containers: Containers/Run).
@@ -115,7 +116,7 @@ function renderStatus(s) {
   $("#vm-start").disabled = !s.managesVm || !!s.busy || running;
   $("#vm-stop").disabled = !s.managesVm || !!s.busy || !running;
   $("#vm-restart").disabled = !s.managesVm || !!s.busy || !running;
-  for (const id of ["#prune-dangling", "#prune-unused", "#prune-cache", "#build-submit", "#pull-submit", "#run-submit"]) {
+  for (const id of ["#prune-dangling", "#prune-unused", "#prune-cache", "#build-submit", "#pull-submit", "#run-submit", "#run-pull"]) {
     $(id).disabled = !engineUp() || !!s.busy;
   }
 }
@@ -264,7 +265,10 @@ function imageActions(i) {
     fillRunForm({ image: ref, interactive: true, remove: true });
     showTab("containers-run");
   };
-  return [shell, run];
+  const named = i.repository !== "<none>" && i.tag !== "<none>";
+  const pull = el("button", { className: "small secondary", disabled: !named, title: named ? `Pull ${ref} again for the latest` : "Untagged image" }, "Pull");
+  pull.onclick = async () => { pull.disabled = true; await pullImage(ref); pull.disabled = false; };
+  return [shell, run, pull];
 }
 
 async function imageShell(ref) {
@@ -364,19 +368,30 @@ $("#build-form").onsubmit = async (e) => {
 
 // -------------------------------------------------------------------- pull
 
-$("#pull-form").onsubmit = async (e) => {
-  e.preventDefault();
-  const image = $("#pull-image").value.trim();
-  if (!image) return;
-  $("#pull-submit").disabled = true;
+/**
+ * Pull `image` without running it. `profile` is the AWS profile for
+ * ecr-login registries (null = the one last used for the registry).
+ */
+async function pullImage(image, profile = null) {
+  if (!image) return false;
   $("#activity").open = true;
+  toast(`Pulling ${image}…`);
   try {
-    await withAwsSignIn(() =>
-      invoke("pull_image", { image, awsProfile: awsProfile("pull"), taskId: newTask("pull") }));
+    await withAwsSignIn(() => invoke("pull_image", { image, awsProfile: profile, taskId: newTask("pull") }));
     toast(`Pulled ${image}`);
     loadImages();
+    return true;
   } catch (e) {
     toast(String(e), true);
+    return false;
+  }
+}
+
+$("#pull-form").onsubmit = async (e) => {
+  e.preventDefault();
+  $("#pull-submit").disabled = true;
+  try {
+    await pullImage($("#pull-image").value.trim(), awsProfile("pull"));
   } finally {
     $("#pull-submit").disabled = !engineUp();
   }
@@ -689,6 +704,17 @@ async function runRequest(req) {
   }
 }
 
+$("#run-pull").onclick = async () => {
+  const image = $("#run-image").value.trim();
+  if (!image) { $("#run-image").focus(); return toast("Choose an image first", true); }
+  $("#run-pull").disabled = true;
+  try {
+    await pullImage(image, awsProfile("run"));
+  } finally {
+    $("#run-pull").disabled = !engineUp();
+  }
+};
+
 $("#run-form").onsubmit = (e) => {
   e.preventDefault();
   runRequest(readRunForm());
@@ -728,6 +754,71 @@ async function renderPresets() {
   }));
   body.replaceChildren(...rows);
 }
+
+// ----------------------------------------------------------------- history
+
+let historyEntries = [];
+
+function ago(ms) {
+  const s = Math.round((Date.now() - ms) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
+  if (s < 7 * 86400) return `${Math.floor(s / 86400)} d ago`;
+  return new Date(ms).toLocaleDateString();
+}
+
+const KIND_LABEL = { run: "Run", pull: "Pull", shell: "Image shell", exec: "Container shell" };
+
+function historyActions(h) {
+  const btn = (label, cls, fn, title) => {
+    const b = el("button", { className: `small ${cls}`, title: title ?? "" }, label);
+    b.onclick = async () => { b.disabled = true; try { await fn(); } finally { b.disabled = false; } };
+    return b;
+  };
+  const out = [];
+  if (h.kind === "run" && h.request) {
+    out.push(btn("Run again", "", () => runRequest(h.request)));
+    out.push(btn("Edit", "secondary", async () => { fillRunForm(h.request); showTab("containers-run"); }, "Open in the Run form"));
+  }
+  if (h.kind === "shell" && h.image) out.push(btn("Open shell", "", () => call("image_shell", { image: h.image }), `As ${userLabel()}`));
+  if (h.kind === "exec" && h.container) out.push(btn("Open shell", "", () => call("open_shell", { container: h.container }), `As ${userLabel()}`));
+  if (h.image) out.push(btn(h.kind === "pull" ? "Pull again" : "Pull", h.kind === "pull" ? "" : "secondary", () => pullImage(h.image, h.awsProfile ?? null)));
+  out.push(btn("Copy", "ghost", async () => { await navigator.clipboard.writeText(h.command); toast("Command copied"); }));
+  out.push(btn("×", "ghost", async () => { historyEntries = await call("history_delete", { id: h.id }); renderHistory(); }, "Remove from history"));
+  return out;
+}
+
+function renderHistory() {
+  const q = $("#history-filter").value.trim().toLowerCase();
+  const kind = $("#history-kind").value;
+  const rows = historyEntries.filter((h) => (!kind || h.kind === kind) && (!q || h.command.toLowerCase().includes(q)));
+  $("#history-body").replaceChildren(
+    ...(rows.length
+      ? rows.map((h) =>
+          el("tr", { className: h.ok === false ? "failed" : "" },
+            el("td", { className: "when", title: new Date(h.at).toLocaleString() }, ago(h.at)),
+            el("td", {}, el("span", { className: `badge ${h.kind}` }, KIND_LABEL[h.kind] ?? h.kind)),
+            el("td", { className: "cmd", title: h.error ?? "" }, h.command + (h.ok === false ? "  ✗" : "")),
+            el("td", { className: "actions" }, ...historyActions(h))))
+      : [el("tr", {}, el("td", { colSpan: 4, className: "empty" },
+          historyEntries.length ? "No matches" : "Nothing yet: runs, pulls and shells you start appear here."))])
+  );
+}
+
+async function loadHistory() {
+  historyEntries = await call("history_list", undefined, { quiet: true }).catch(() => []);
+  renderHistory();
+}
+
+$("#history-filter").oninput = renderHistory;
+$("#history-kind").onchange = renderHistory;
+$("#history-clear").onclick = async () => {
+  if (!(await confirmAction("Clear the whole command history?", "Clear history"))) return;
+  historyEntries = await call("history_clear");
+  renderHistory();
+};
+listen("history", (e) => { historyEntries = e.payload; if ($("#view-history").classList.contains("active")) renderHistory(); });
 
 // -------------------------------------------------------------------- boot
 

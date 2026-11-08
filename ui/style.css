@@ -261,3 +261,12 @@ textarea.yaml, .cfg-field textarea { font-family: ui-monospace, Menlo, monospace
 .danger-zone { border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); }
 .danger-zone h2 { color: var(--danger); }
 code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+
+/* ---- history ---- */
+table.history td { vertical-align: middle; }
+table.history td.when { white-space: nowrap; color: var(--muted); font-size: 12px; }
+table.history td.cmd { font-size: 11.5px; color: var(--text); }
+table.history .failed td.cmd { color: var(--danger); }
+.badge.run { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.badge.pull { background: color-mix(in srgb, var(--ok) 22%, transparent); }
+.badge.shell, .badge.exec { background: color-mix(in srgb, var(--warn) 22%, transparent); }

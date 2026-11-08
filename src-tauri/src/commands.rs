@@ -11,6 +11,7 @@ use crate::engine::{
     self, BuildRequest, ContainerAction, ContainerInfo, DiskUsage, ImageInfo, RunRequest,
 };
 use crate::error::Result;
+use crate::history;
 use crate::process::LineSink;
 use crate::runtime::Profile;
 use crate::runtime::Provider as _;
@@ -172,6 +173,12 @@ pub async fn docker_for_image(
 /// Open an integrated shell window: `docker exec -it` into a running
 /// container, as the saved "Shell as" user/shell.
 pub fn open_container_shell(app: &AppHandle, container: &str) -> Result<()> {
+    let prefs = app.state::<AppState>().preferences();
+    if let Ok(args) = engine::exec_args(container, &prefs.user_spec(), &prefs.shell) {
+        let mut entry = history::Entry::new(history::Kind::Exec, command_line(None, &args));
+        entry.container = Some(container.to_string());
+        history::record(app, entry);
+    }
     shell::open(
         app,
         ShellTarget::Exec {
@@ -179,6 +186,33 @@ pub fn open_container_shell(app: &AppHandle, container: &str) -> Result<()> {
         },
         None,
     )
+}
+
+/// `[AWS_PROFILE=…] docker <args>`, shell-quoted, for display and history.
+fn command_line(aws_profile: Option<&str>, args: &[String]) -> String {
+    aws_profile
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+        .map(|p| format!("AWS_PROFILE={}", engine::shell_quote(p)))
+        .into_iter()
+        .chain(std::iter::once("docker".to_string()))
+        .chain(args.iter().map(|a| engine::shell_quote(a)))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// The AWS profile shown in a command for `image`: only for registries that
+/// use the ecr-login helper.
+fn shown_profile<'a>(image: &str, profile: Option<&'a str>) -> Option<&'a str> {
+    profile.filter(|p| !p.trim().is_empty() && aws::ecr_registry(image).is_some())
+}
+
+fn run_command_line(request: &RunRequest) -> Result<String> {
+    let args = engine::run_args(request)?;
+    Ok(command_line(
+        shown_profile(&request.image, request.aws_profile.as_deref()),
+        &args,
+    ))
 }
 
 /// Run a container. Interactive requests open a shell window; detached ones
@@ -193,16 +227,40 @@ pub async fn start_container(app: &AppHandle, request: &RunRequest) -> Result<Op
             request: request.clone(),
             shell_entrypoint: false,
         };
-        shell::open(app, target, Some(options))?;
-        Ok(None)
+        let opened = shell::open(app, target, Some(options));
+        record_run::<()>(app, request, None);
+        opened.map(|_| None)
     } else {
-        app.state::<AppState>()
-            .docker()
-            .await?
-            .run_detached(request)
-            .await
-            .map(Some)
+        let sink = log_sink(app, "run");
+        let result = match docker_for_image(
+            app,
+            &request.image,
+            request.aws_profile.as_deref(),
+            false,
+            &sink,
+        )
+        .await
+        {
+            Ok(docker) => docker.run_detached(request).await.map(Some),
+            Err(e) => Err(e),
+        };
+        record_run(app, request, Some(&result));
+        result
     }
+}
+
+fn record_run<T>(app: &AppHandle, request: &RunRequest, result: Option<&Result<T>>) {
+    let Ok(command) = run_command_line(request) else {
+        return;
+    };
+    let mut entry = history::Entry::new(history::Kind::Run, command);
+    entry.image = Some(request.image.clone());
+    entry.aws_profile = request.aws_profile.clone();
+    entry.request = Some(request.clone());
+    if let Some(r) = result {
+        entry = entry.outcome(r);
+    }
+    history::record(app, entry);
 }
 
 pub async fn run_preset_by_index(app: &AppHandle, index: usize) -> Result<Option<String>> {
@@ -342,6 +400,16 @@ pub async fn pull_image(
     if let Err(e) = &result {
         sink(&format!("Pull failed: {e}"));
     }
+    let image = image.trim().to_string();
+    let profile = shown_profile(&image, aws_profile.as_deref()).map(str::to_string);
+    let mut entry = history::Entry::new(
+        history::Kind::Pull,
+        command_line(profile.as_deref(), &["pull".to_string(), image.clone()]),
+    )
+    .outcome(&result);
+    entry.image = Some(image);
+    entry.aws_profile = profile;
+    history::record(&app, entry);
     result
 }
 
@@ -394,18 +462,7 @@ pub fn delete_preset(app: AppHandle, name: String) -> Result<Vec<RunPreset>> {
 /// The equivalent docker CLI command for a run request (for display / copy).
 #[tauri::command]
 pub fn preview_run(request: RunRequest) -> Result<String> {
-    let args = engine::run_args(&request)?;
-    let env = request
-        .aws_profile
-        .as_deref()
-        .filter(|p| !p.trim().is_empty() && aws::ecr_registry(&request.image).is_some())
-        .map(|p| format!("AWS_PROFILE={}", engine::shell_quote(p.trim())));
-    Ok(env
-        .into_iter()
-        .chain(std::iter::once("docker".to_string()))
-        .chain(args.iter().map(|a| engine::shell_quote(a)))
-        .collect::<Vec<_>>()
-        .join(" "))
+    run_command_line(&request)
 }
 
 #[tauri::command]
@@ -421,6 +478,13 @@ pub fn open_shell(app: AppHandle, container: String) -> Result<()> {
 /// `docker run -it --rm --user <pref> --entrypoint <shell> IMAGE` in a shell window.
 #[tauri::command]
 pub fn image_shell(app: AppHandle, image: String) -> Result<()> {
+    let prefs = app.state::<AppState>().preferences();
+    let shown = engine::shell_run_request(&image, &prefs.user_spec(), &prefs.shell);
+    if let Ok(command) = run_command_line(&shown) {
+        let mut entry = history::Entry::new(history::Kind::Shell, command);
+        entry.image = Some(image.clone());
+        history::record(&app, entry);
+    }
     let request = RunRequest {
         image,
         remove: true,

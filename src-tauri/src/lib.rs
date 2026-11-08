@@ -5,6 +5,7 @@ mod colima_config;
 mod commands;
 mod engine;
 mod error;
+mod history;
 mod menu;
 mod process;
 mod runtime;
@@ -63,6 +64,9 @@ pub fn run() {
             commands::colima_create,
             commands::colima_delete,
             commands::host_info,
+            history::history_list,
+            history::history_delete,
+            history::history_clear,
             commands::colima_data_usage,
             commands::colima_delete_all,
             commands::colima_prune,
@@ -82,6 +86,12 @@ pub fn run() {
                 .map(|d| d.join("settings.json"));
             app.manage(state::AppState::new(settings));
             app.manage(shell::ShellSessions::default());
+            app.manage(history::History::load(
+                app.path()
+                    .app_config_dir()
+                    .ok()
+                    .map(|d| d.join("history.json")),
+            ));
 
             // Menu bar app with a Dock icon and full menu while a window is open.
             menu::install(app.handle())?;

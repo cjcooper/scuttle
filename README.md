@@ -15,6 +15,11 @@ macOS + Colima is the first target. The design also supports other Docker Deskto
 - **Runtime**: pick a provider and profile, start, stop and restart it, and inspect every profile's CPU, memory and disk
 - **Images ▸ Local**: pull; list, filter and multi-select remove; remove dangling or all unused images; prune the build cache; view disk usage. Each image has **Shell**, which runs `docker run -it --rm --user <shell user> --entrypoint <shell> IMAGE` in your terminal, and **Run…**, which prefills the Run form.
 - **Images ▸ Build**: build context and Dockerfile pickers, tags, platform, target stage, build args, no-cache and pull options, with streamed BuildKit output
+- **History**: every run, pull and shell the app starts, from the dashboard or the menu bar, with the exact docker command (including `AWS_PROFILE` for ECR).
+  - Filter by text or kind; failed commands are marked.
+  - **Run again**, **Edit** (opens it in the Run form), **Open shell**, **Pull**, **Copy** and remove.
+  - Up to 500 entries, saved in `history.json` next to `settings.json`.
+- **Pull without running**: **Pull image** in the Run form, **Pull** on each tagged image (to refresh it), and **Pull** on history entries. These pulls use the same AWS profile and sign-in handling as the Images ▸ Local Pull box.
 - **Containers ▸ Containers**: list and filter; **Shell** (`docker exec -it`), start, stop, restart and remove
 - **Containers ▸ Run**: a full `docker run` form, or paste any `docker run …` command to fill it. Shows a live preview of the command, with copy. Runs interactively in a terminal window or detached, and can **save presets** that also appear in the menu bar.
 - **Colima** (shown when Colima is installed): edit any profile's `colima.yaml`. You can edit it with a form, or directly in the **YAML** tab. **Save & Restart** applies the changes.
@@ -78,6 +83,7 @@ src-tauri/src/
     colima.rs       Colima profiles (colima list/status/start/stop)
     podman.rs       podman machine (macOS/Windows/Linux)
     docker_context.rs  any docker context: Docker Desktop, OrbStack, Rancher Desktop, remote hosts
+  history.rs        command history (history.json)
   colima_config.rs  read/validate/merge colima.yaml, create-profile flags
   aws.rs            ECR detection, AWS profiles, ECR login / SSO sign-in
   menu.rs           app menu (with About) and Dock-icon switching

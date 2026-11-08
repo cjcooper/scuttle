@@ -15,6 +15,7 @@
       <button class="nav active" data-view="runtime">Runtime</button>
       <button class="nav" data-view="images">Images</button>
       <button class="nav" data-view="containers">Containers</button>
+      <button class="nav" data-view="history">History</button>
       <button class="nav" data-view="colima" id="nav-colima" hidden>Colima</button>
     </nav>
     <div class="status-pill" id="status-pill">
@@ -245,6 +246,7 @@
             <button type="button" id="preset-save" class="secondary">Save preset</button>
             <span class="grow"></span>
             <button type="button" id="run-copy" class="ghost">Copy command</button>
+            <button type="button" id="run-pull" class="secondary" title="Pull the image without running it">Pull image</button>
             <button type="submit" id="run-submit">Run</button>
           </div>
         </form>
@@ -255,6 +257,32 @@
             <tbody id="presets-body"></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- History -->
+    <section class="view" id="view-history">
+      <header>
+        <h1>History</h1>
+        <div class="toolbar">
+          <button id="history-clear" class="ghost">Clear history</button>
+        </div>
+      </header>
+      <div class="card">
+        <div class="row">
+          <input type="search" class="grow" id="history-filter" placeholder="Filter commands…" />
+          <select id="history-kind">
+            <option value="">All</option>
+            <option value="run">Run</option>
+            <option value="pull">Pull</option>
+            <option value="shell">Image shell</option>
+            <option value="exec">Container shell</option>
+          </select>
+        </div>
+        <table class="history">
+          <thead><tr><th>When</th><th>Kind</th><th>Command</th><th></th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
       </div>
     </section>
 
