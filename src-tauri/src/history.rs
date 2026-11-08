@@ -26,6 +26,8 @@ pub enum Kind {
     Shell,
     /// `docker exec` shell into a running container.
     Exec,
+    /// `docker compose up` of a registered stack (`container` holds its id).
+    Compose,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

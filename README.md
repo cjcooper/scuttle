@@ -15,6 +15,16 @@ macOS + Colima is the first target. The design also supports other Docker Deskto
 - **Runtime**: pick a provider and profile, start, stop and restart it, and inspect every profile's CPU, memory and disk
 - **Images ▸ Local**: pull; list, filter and multi-select remove; remove dangling or all unused images; prune the build cache; view disk usage. Each image has **Shell**, which runs `docker run -it --rm --user <shell user> --entrypoint <shell> IMAGE` in your terminal, and **Run…**, which prefills the Run form.
 - **Images ▸ Build**: build context and Dockerfile pickers, tags, platform, target stage, build args, no-cache and pull options, with streamed BuildKit output
+- **Compose**: register Docker Compose stacks with these settings:
+  - a directory, `-f` files in order, project name, profiles, env files and extra environment;
+  - **Set UID and GID to my user**, for compose files using `user: "$UID:$GID"`;
+  - extra `up` arguments.
+
+  Paste a command such as `dcc -f docker-compose.yml -f docker-compose/colima.yml up` and it fills the form. Your shell aliases are expanded, so `dcc` → `UID=$UID GID=$GID COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose`.
+
+  Each stack offers **Up** (`up -d`), **Stop**, **Restart**, **Down**, a services list, and **Logs** (`compose logs -f` in a built-in terminal window).
+  - **Start with app** brings a stack up once the engine is reachable, waiting for the provider if it is still starting, e.g. after a login launch.
+  - **On quit** controls what happens to a running stack when the app quits: `stop` (default, like Ctrl-C on `up`), `down`, or leave running. This applies however the app quits: its Quit item, the Dock, or logging out. It is limited to 2 minutes.
 - **History**: every run, pull and shell the app starts, from the dashboard or the menu bar, with the exact docker command (including `AWS_PROFILE` for ECR).
   - Filter by text or kind; failed commands are marked.
   - **Run again**, **Edit** (opens it in the Run form), **Open shell**, **Pull**, **Copy** and remove.
@@ -85,6 +95,7 @@ src-tauri/src/
     colima.rs       Colima profiles (colima list/status/start/stop)
     podman.rs       podman machine (macOS/Windows/Linux)
     docker_context.rs  any docker context: Docker Desktop, OrbStack, Rancher Desktop, remote hosts
+  compose.rs        registered compose stacks: autostart, actions, shutdown on quit, alias expansion
   login.rs          open at login (tauri-plugin-autostart) and starting the provider then
   history.rs        command history (history.json)
   colima_config.rs  read/validate/merge colima.yaml, create-profile flags

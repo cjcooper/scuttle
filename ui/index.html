@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css" />
   <script src="app.js" defer></script>
   <script src="colima.js" defer></script>
+  <script src="compose.js" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -15,6 +16,7 @@
       <button class="nav active" data-view="runtime">Runtime</button>
       <button class="nav" data-view="images">Images</button>
       <button class="nav" data-view="containers">Containers</button>
+      <button class="nav" data-view="compose">Compose</button>
       <button class="nav" data-view="history">History</button>
     </nav>
     <div class="status-pill" id="status-pill">
@@ -269,6 +271,94 @@
       </div>
     </section>
 
+    <!-- Compose -->
+    <section class="view" id="view-compose">
+      <header>
+        <h1>Compose</h1>
+        <div class="toolbar">
+          <button id="compose-refresh" class="ghost" title="Refresh">↻</button>
+          <button id="compose-add">Add stack…</button>
+        </div>
+      </header>
+      <div class="card">
+        <table class="compose">
+          <thead><tr><th>Stack</th><th>Status</th><th>Start with app</th><th>On quit</th><th></th></tr></thead>
+          <tbody id="compose-body"></tbody>
+        </table>
+        <p class="hint">Stacks marked <b>Start with app</b> come up once the engine is reachable (after the provider starts, too). When the app quits, running stacks are stopped or taken down per <b>On quit</b>.</p>
+      </div>
+    </section>
+
+    <!-- Compose stack editor (modal) -->
+    <dialog class="modal" id="compose-dialog">
+      <header class="modal-head">
+        <h1 id="cs-title">Compose stack</h1>
+        <div class="toolbar">
+          <button class="ghost close" id="cs-close" title="Close (Esc)">✕</button>
+        </div>
+      </header>
+      <div class="modal-body">
+        <div class="card">
+          <h2>Paste a command</h2>
+          <div class="row">
+            <input class="grow mono" id="cs-paste" placeholder="dcc -f docker-compose.yml -f docker-compose/colima.yml up" />
+            <button type="button" id="cs-parse" class="secondary">Fill form</button>
+          </div>
+          <p class="hint">Shell aliases are expanded using your login shell (e.g. <code>dcc</code> → <code>UID=$UID GID=$GID … docker-compose</code>).</p>
+        </div>
+        <form class="card form" id="cs-form">
+          <div class="row">
+            <label class="grow">Directory
+              <div class="row">
+                <input id="cs-dir" required placeholder="/path/to/project" />
+                <button type="button" id="cs-pick-dir" class="secondary">Choose…</button>
+              </div>
+            </label>
+            <label>Name
+              <input id="cs-name" required placeholder="eg_system" />
+            </label>
+          </div>
+          <label>Compose files <span class="hint">(one per line, relative to the directory, in order; empty = docker-compose.yml)</span>
+            <div class="row">
+              <textarea id="cs-files" rows="3" class="grow"></textarea>
+              <button type="button" id="cs-pick-files" class="secondary">Add files…</button>
+            </div>
+          </label>
+          <div class="row">
+            <label>Project name <input id="cs-project" placeholder="(directory name)" /></label>
+            <label class="grow">Profiles <span class="hint">(comma separated)</span> <input id="cs-profiles" /></label>
+            <label class="grow">Env files <span class="hint">(comma separated)</span> <input id="cs-envfiles" placeholder=".env.local" /></label>
+          </div>
+          <div class="row">
+            <label class="grow">Environment <span class="hint">(KEY=VALUE per line)</span>
+              <textarea id="cs-env" rows="3"></textarea>
+            </label>
+            <label class="grow">Extra <code>up</code> arguments <span class="hint">(-d is always added)</span>
+              <input id="cs-upargs" class="mono" placeholder="--build --remove-orphans" />
+            </label>
+          </div>
+          <div class="row">
+            <label class="check"><input type="checkbox" id="cs-hostids" checked /> <span id="cs-hostids-label">Set UID and GID to my user</span></label>
+            <label class="check"><input type="checkbox" id="cs-autostart" /> Start with this app</label>
+            <label>On quit
+              <select id="cs-onquit">
+                <option value="stop">Stop (docker compose stop)</option>
+                <option value="down">Down (docker compose down)</option>
+                <option value="leave">Leave running</option>
+              </select>
+            </label>
+          </div>
+          <pre class="log preview" id="cs-preview"></pre>
+        </form>
+      </div>
+      <div class="cfg-actions">
+        <span class="hint grow" id="cs-error"></span>
+        <button id="cs-delete" class="danger" hidden>Delete stack</button>
+        <button id="cs-cancel" class="ghost">Cancel</button>
+        <button id="cs-save">Save</button>
+      </div>
+    </dialog>
+
     <!-- History -->
     <section class="view" id="view-history">
       <header>
@@ -286,6 +376,7 @@
             <option value="pull">Pull</option>
             <option value="shell">Image shell</option>
             <option value="exec">Container shell</option>
+            <option value="compose">Compose up</option>
           </select>
         </div>
         <table class="history">

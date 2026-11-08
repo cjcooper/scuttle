@@ -67,7 +67,10 @@ function renderOptions() {
   sel.value = options.shell;
   // The shell choice only applies to exec and "shell into image" sessions.
   const t = session?.target;
-  sel.hidden = !!t && t.kind === "run" && !t.shellEntrypoint;
+  sel.hidden = !!t && ((t.kind === "run" && !t.shellEntrypoint) || t.kind === "command");
+  // A plain command (e.g. compose logs) has no user to switch.
+  $("#user-seg").hidden = t?.kind === "command";
+  $("#pop-out").hidden = false;
 }
 
 function userLabel(u) {
@@ -123,10 +126,11 @@ async function connect(newOptions) {
   pending = null;
   early.forEach(handleOutput);
   options = session.options;
-  $("#shell-heading").textContent = `${session.title} — ${userLabel(options.user)}`;
+  const isCommand = session.target.kind === "command";
+  $("#shell-heading").textContent = isCommand ? session.title : `${session.title} — ${userLabel(options.user)}`;
   $("#shell-command").textContent = session.command;
   $("#shell-command").title = session.command;
-  document.title = `${session.title} (${userLabel(options.user)})`;
+  document.title = isCommand ? session.title : `${session.title} (${userLabel(options.user)})`;
   renderOptions();
   term.focus();
 }

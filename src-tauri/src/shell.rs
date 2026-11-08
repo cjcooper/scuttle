@@ -39,12 +39,21 @@ pub enum ShellTarget {
         #[serde(default)]
         shell_entrypoint: bool,
     },
+    /// Any docker command (e.g. `compose logs -f`) in a directory, with
+    /// extra environment. User/shell options don't apply.
+    Command {
+        title: String,
+        args: Vec<String>,
+        cwd: Option<String>,
+        env: Vec<(String, String)>,
+    },
 }
 
 impl ShellTarget {
     fn title(&self) -> String {
         match self {
             ShellTarget::Exec { container } => container.clone(),
+            ShellTarget::Command { title, .. } => title.clone(),
             ShellTarget::Run { request, .. } => request
                 .name
                 .clone()
@@ -221,6 +230,7 @@ fn docker_args(
             engine::exec_args(container, &options.user, &options.shell)?,
             None,
         )),
+        ShellTarget::Command { args, .. } => Ok((args.clone(), None)),
         ShellTarget::Run {
             request,
             shell_entrypoint,
@@ -325,7 +335,9 @@ pub async fn start(
             )
             .await?
         }
-        ShellTarget::Exec { .. } => app.state::<AppState>().docker().await?,
+        ShellTarget::Exec { .. } | ShellTarget::Command { .. } => {
+            app.state::<AppState>().docker().await?
+        }
     };
     let (args, cleanup) = docker_args(&target, &options)?;
     let preview = std::iter::once("docker".to_string())
@@ -352,8 +364,20 @@ pub async fn start(
     for (k, v) in docker.env() {
         cmd.env(k, v);
     }
-    if let Some(home) = std::env::var_os("HOME") {
-        cmd.cwd(home);
+    match &target {
+        ShellTarget::Command { cwd, env, .. } => {
+            for (k, v) in env {
+                cmd.env(k, v);
+            }
+            if let Some(dir) = cwd {
+                cmd.cwd(dir);
+            }
+        }
+        _ => {
+            if let Some(home) = std::env::var_os("HOME") {
+                cmd.cwd(home);
+            }
+        }
     }
     let mut child = pty
         .slave
@@ -522,9 +546,27 @@ pub async fn shell_pop_out(window: WebviewWindow) -> Result<()> {
             .docker()
             .await?
             .with_aws_profile(request.aws_profile.as_deref()),
-        ShellTarget::Exec { .. } => state.docker().await?,
+        ShellTarget::Exec { .. } | ShellTarget::Command { .. } => state.docker().await?,
     };
     let (args, _) = docker_args(&target, &options)?;
+    if let ShellTarget::Command {
+        cwd: Some(dir),
+        env,
+        ..
+    } = &target
+    {
+        // Pop out with the same directory and environment.
+        let prefix: String = env
+            .iter()
+            .map(|(k, v)| format!("{k}={} ", engine::shell_quote(v)))
+            .collect();
+        let line = format!(
+            "cd {} && {prefix}{}",
+            engine::shell_quote(dir),
+            docker.command_line(&args)?
+        );
+        return crate::terminal::launch(&line, &title, &state.preferences().terminal);
+    }
     crate::terminal::launch(
         &docker.command_line(&args)?,
         &title,

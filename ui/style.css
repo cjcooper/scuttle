@@ -1,3 +1,4 @@
+[hidden] { display: none !important; }
 :root {
   --bg: #f5f6f8;
   --panel: #ffffff;
@@ -269,6 +270,7 @@ table.history td.cmd { font-size: 11.5px; color: var(--text); }
 table.history .failed td.cmd { color: var(--danger); }
 .badge.run { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .badge.pull { background: color-mix(in srgb, var(--ok) 22%, transparent); }
+.badge.compose { background: color-mix(in srgb, var(--accent) 12%, var(--ok) 12%); }
 .badge.shell, .badge.exec { background: color-mix(in srgb, var(--warn) 22%, transparent); }
 
 /* ---- modal (Colima settings) ---- */
@@ -287,3 +289,13 @@ dialog.modal::backdrop { background: rgba(10, 14, 22, .45); }
 .modal-head .toolbar { align-items: center; }
 .modal-head .close { padding: 4px 10px; }
 .modal-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; }
+
+/* ---- compose ---- */
+table.compose td { vertical-align: middle; }
+table.compose .stack-name { font-weight: 600; cursor: pointer; }
+table.compose .stack-name::before { content: "▸ "; color: var(--muted); }
+table.compose tr.open .stack-name::before { content: "▾ "; }
+table.compose .stack-dir { display: block; font-size: 11px; color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+table.compose tr.services td { background: var(--bg); padding: 4px 8px 10px 24px; }
+table.compose tr.services table td, table.compose tr.services table th { font-size: 12px; padding: 3px 6px; }
+.badge.partial { background: color-mix(in srgb, var(--warn) 25%, transparent); }

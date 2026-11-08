@@ -146,6 +146,12 @@ impl Docker {
             .collect()
     }
 
+    /// A docker command against this engine, for callers that need their
+    /// own working directory, environment or stdio.
+    pub fn cli(&self, args: &[&str]) -> Result<tokio::process::Command> {
+        self.command(args)
+    }
+
     /// Whether `image` is present locally (so running it won't pull).
     pub async fn image_exists(&self, image: &str) -> bool {
         self.run(

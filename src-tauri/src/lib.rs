@@ -3,6 +3,7 @@ mod app_icon;
 mod aws;
 mod colima_config;
 mod commands;
+mod compose;
 mod engine;
 mod error;
 mod history;
@@ -74,6 +75,15 @@ pub fn run() {
             commands::colima_create,
             commands::colima_delete,
             commands::host_info,
+            compose::compose_list,
+            compose::compose_preview,
+            compose::compose_save,
+            compose::compose_delete,
+            compose::compose_services,
+            compose::compose_action,
+            compose::compose_logs,
+            compose::compose_host_ids,
+            compose::compose_expand,
             login::login_item_get,
             login::login_item_set,
             history::history_list,
@@ -118,6 +128,8 @@ pub fn run() {
                 show_dashboard(app.handle());
             }
             menu::update_dock(app.handle(), None);
+            // Registered compose stacks marked to start with the app.
+            compose::spawn_autostart(app.handle());
             Ok(())
         })
         .on_window_event(|window, event| match event {
@@ -153,6 +165,14 @@ pub fn run() {
         RunEvent::ExitRequested {
             api, code: None, ..
         } => api.prevent_exit(),
+        // Every way of quitting ends here (the app's Quit, the Dock, logging
+        // out). Stop or take down compose stacks before the process exits.
+        RunEvent::Exit => {
+            for w in app.webview_windows().values() {
+                let _ = w.hide();
+            }
+            tauri::async_runtime::block_on(compose::shutdown(app));
+        }
         _ => {}
     });
 }

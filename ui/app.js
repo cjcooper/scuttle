@@ -81,6 +81,7 @@ function showView(name) {
   if (name === "containers") { loadContainers(); renderPresets(); }
   if (name === "runtime") loadProfiles();
   if (name === "history") loadHistory();
+  if (name === "compose") loadStacks();
 }
 
 // Sub-tabs inside a view (Images: Local/Build, Containers: Containers/Run).
@@ -807,7 +808,7 @@ function ago(ms) {
   return new Date(ms).toLocaleDateString();
 }
 
-const KIND_LABEL = { run: "Run", pull: "Pull", shell: "Image shell", exec: "Container shell" };
+const KIND_LABEL = { run: "Run", pull: "Pull", shell: "Image shell", exec: "Container shell", compose: "Compose up" };
 
 function historyActions(h) {
   const btn = (label, cls, fn, title) => {
@@ -822,6 +823,9 @@ function historyActions(h) {
   }
   if (h.kind === "shell" && h.image) out.push(btn("Open shell", "", () => call("image_shell", { image: h.image }), `As ${userLabel()}`));
   if (h.kind === "exec" && h.container) out.push(btn("Open shell", "", () => call("open_shell", { container: h.container }), `As ${userLabel()}`));
+  if (h.kind === "compose" && h.container) {
+    out.push(btn("Up again", "", () => call("compose_action", { id: h.container, action: "up", taskId: newTask("compose") })));
+  }
   if (h.image) out.push(btn(h.kind === "pull" ? "Pull again" : "Pull", h.kind === "pull" ? "" : "secondary", () => pullImage(h.image, h.awsProfile ?? null)));
   out.push(btn("Copy", "ghost", async () => { await navigator.clipboard.writeText(h.command); toast("Command copied"); }));
   out.push(btn("×", "ghost", async () => { historyEntries = await call("history_delete", { id: h.id }); renderHistory(); }, "Remove from history"));

@@ -84,6 +84,8 @@ pub struct Settings {
     pub presets: Vec<RunPreset>,
     /// Last AWS profile used per ECR registry host.
     pub ecr_profiles: std::collections::BTreeMap<String, String>,
+    /// Registered Docker Compose stacks.
+    pub compose_stacks: Vec<crate::compose::Stack>,
 }
 
 pub struct AppState {
