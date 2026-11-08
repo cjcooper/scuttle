@@ -1,4 +1,4 @@
-// Colima view: edit a profile's colima.yaml (resources, VM, Kubernetes,
+// Colima settings dialog (opened from Runtime): edit a profile's colima.yaml (resources, VM, Kubernetes,
 // network, mounts, env, Docker daemon config, provision scripts), or create a
 // new profile. Shares helpers ($, el, call, toast, confirmAction, newTask,
 // loadProfiles, showTab) with app.js.
@@ -302,19 +302,36 @@ async function loadConfig() {
   renderForm();
 }
 
-/** Called by app.js whenever the Colima view is shown. */
-window.loadColimaView = async () => {
+const dialogEl = $("#colima-dialog");
+
+/** Open the Colima settings dialog on `profile` (or the selected one). */
+window.openColimaDialog = async (profile) => {
   if (!cfgLoaded) {
     cfgHost = await call("host_info", undefined, { quiet: true }).catch(() => cfgHost);
-  }
-  await loadColimaProfiles();
-  if (!cfgLoaded || (!dirtySettings() && !dirtyYaml() && !isNew())) {
     cfgLoaded = true;
-    await loadConfig();
-  } else {
-    renderActions();
   }
+  if (profile) cfgProfile = profile;
+  showTab("colima-settings");
+  $("#cfg-actions").hidden = false;
+  $("#cfg-profile").disabled = false;
+  await loadColimaProfiles();
+  await loadConfig();
+  if (!dialogEl.open) dialogEl.showModal();
 };
+
+async function closeDialog() {
+  if ((dirtySettings() || dirtyYaml()) && !(await confirmAction("Discard unsaved Colima changes?", "Close"))) return;
+  dialogEl.close();
+}
+
+$("#colima-close").onclick = closeDialog;
+// Esc: ask first when there are unsaved changes.
+dialogEl.addEventListener("cancel", (e) => {
+  e.preventDefault();
+  closeDialog();
+});
+// The Runtime page shows profile sizes; refresh it when the dialog closes.
+dialogEl.addEventListener("close", () => loadProfiles());
 
 $("#cfg-profile").onchange = async (e) => {
   if ((dirtySettings() || dirtyYaml()) && !(await confirmAction("Discard unsaved changes?"))) {
@@ -398,7 +415,7 @@ $("#cfg-delete").onclick = async () => {
 
 // Keep busy state / profile states current.
 listen("status", () => {
-  if ($("#view-colima").classList.contains("active")) renderActions();
+  if (dialogEl.open) renderActions();
 });
 
 // -------------------------------------------------------------------- data
@@ -498,3 +515,13 @@ document.querySelectorAll('[data-group="colima"] .tab').forEach((t) =>
     if (data) loadData();
   })
 );
+
+// Progress of Colima operations, shown in the dialog's footer (the activity
+// log is behind the modal).
+listen("task-log", (e) => {
+  if (dialogEl.open && e.payload.taskId.startsWith("colima")) {
+    const d = $("#cfg-dirty");
+    d.classList.remove("cfg-dirty-on");
+    d.textContent = e.payload.line;
+  }
+});

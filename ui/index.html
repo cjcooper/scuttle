@@ -16,7 +16,6 @@
       <button class="nav" data-view="images">Images</button>
       <button class="nav" data-view="containers">Containers</button>
       <button class="nav" data-view="history">History</button>
-      <button class="nav" data-view="colima" id="nav-colima" hidden>Colima</button>
     </nav>
     <div class="status-pill" id="status-pill">
       <span class="dot" id="status-dot"></span>
@@ -37,6 +36,7 @@
             <select id="profile-select"></select>
           </label>
           <button id="refresh-profiles" class="ghost" title="Refresh">↻</button>
+          <button id="configure-colima" class="secondary" hidden title="Edit this profile's CPU, memory, disk and other settings">Configure…</button>
         </div>
         <p class="hint" id="provider-hint"></p>
       </div>
@@ -51,7 +51,7 @@
       <div class="card">
         <h2>Profiles</h2>
         <table>
-          <thead><tr><th>Name</th><th>State</th><th>Arch</th><th>CPUs</th><th>Memory</th><th>Disk</th><th>Runtime / Detail</th></tr></thead>
+          <thead><tr><th>Name</th><th>State</th><th>Arch</th><th>CPUs</th><th>Memory</th><th>Disk</th><th>Runtime / Detail</th><th></th></tr></thead>
           <tbody id="profiles-body"></tbody>
         </table>
       </div>
@@ -286,9 +286,9 @@
       </div>
     </section>
 
-    <!-- Colima configuration -->
-    <section class="view" id="view-colima">
-      <header>
+    <!-- Colima configuration (modal, opened from Runtime) -->
+    <dialog class="modal" id="colima-dialog">
+      <header class="modal-head">
         <h1>Colima</h1>
         <div class="toolbar">
           <select id="cfg-profile" title="Profile"></select>
@@ -298,8 +298,10 @@
             <button class="tab" data-tab="colima-yaml">YAML</button>
             <button class="tab" data-tab="colima-data">Data</button>
           </div>
+          <button class="ghost close" id="colima-close" title="Close (Esc)">✕</button>
         </div>
       </header>
+      <div class="modal-body">
 
       <div class="card" id="cfg-new" hidden>
         <div class="row">
@@ -355,6 +357,7 @@
         </div>
       </div>
 
+      </div>
       <div class="cfg-actions" id="cfg-actions">
         <span class="hint grow" id="cfg-dirty"></span>
         <button id="cfg-delete" class="danger">Delete profile…</button>
@@ -362,7 +365,7 @@
         <button id="cfg-save" class="secondary">Save</button>
         <button id="cfg-apply">Save &amp; Restart</button>
       </div>
-    </section>
+    </dialog>
 
     <datalist id="image-names"></datalist>
     <datalist id="platforms">

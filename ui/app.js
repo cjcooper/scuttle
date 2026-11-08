@@ -22,6 +22,9 @@ const newTask = (kind) => `${kind}-${Date.now()}-${++taskSeq}`;
 
 function toast(msg, isError = false) {
   const t = $("#toast");
+  // An open modal sits in the top layer; show the toast inside it.
+  const host = document.querySelector("dialog[open]") ?? document.body;
+  if (t.parentElement !== host) host.append(t);
   t.textContent = msg;
   t.className = "toast show" + (isError ? " error" : "");
   clearTimeout(toast.timer);
@@ -75,7 +78,6 @@ function showView(name) {
   if (name === "images") loadImages();
   if (name === "containers") { loadContainers(); renderPresets(); }
   if (name === "runtime") loadProfiles();
-  if (name === "colima") window.loadColimaView?.();
   if (name === "history") loadHistory();
 }
 
@@ -85,8 +87,9 @@ document.querySelectorAll(".tabs").forEach((group) =>
 );
 function showTab(id) {
   const target = document.getElementById(id);
-  const view = target.closest(".view");
-  showView(view.id.replace("view-", ""));
+  // Tabs live in a view or in a modal dialog.
+  const view = target.closest(".view, dialog");
+  if (view.classList.contains("view")) showView(view.id.replace("view-", ""));
   view.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === id));
   view.querySelectorAll(".subview").forEach((v) => v.classList.toggle("active", v === target));
   if (id === "containers-run") updatePreview();
@@ -137,7 +140,6 @@ $("#vm-restart").onclick = () => vmAction("restart");
 
 async function loadProviders() {
   providers = await call("list_providers");
-  $("#nav-colima").hidden = !providers.some((p) => p.id === "colima" && p.installed);
   const sel = await call("get_selection");
   const ps = $("#provider-select");
   ps.replaceChildren(
@@ -153,6 +155,8 @@ async function loadProfiles(sel) {
   sel ??= await call("get_selection", undefined, { quiet: true });
   const providerId = $("#provider-select").value || sel.provider;
   const provider = providers.find((p) => p.id === providerId);
+  const colima = providerId === "colima";
+  $("#configure-colima").hidden = !colima;
   $("#provider-hint").textContent = provider?.managesVm
     ? ""
     : "This provider's engine lifecycle is managed by its own app (Docker Desktop, OrbStack, Rancher Desktop…). Images, builds and containers still work here.";
@@ -160,7 +164,7 @@ async function loadProfiles(sel) {
   try {
     profiles = await call("list_profiles", { provider: providerId }, { quiet: true });
   } catch (e) {
-    $("#profiles-body").replaceChildren(el("tr", {}, el("td", { colSpan: 7, className: "empty" }, String(e))));
+    $("#profiles-body").replaceChildren(el("tr", {}, el("td", { colSpan: 8, className: "empty" }, String(e))));
   }
   const current = providerId === sel.provider ? sel.profile : profiles.find((p) => p.isDefault)?.name;
   $("#profile-select").replaceChildren(
@@ -176,13 +180,22 @@ async function loadProfiles(sel) {
           el("td", {}, p.cpus ?? "—"),
           el("td", {}, bytes(p.memory)),
           el("td", {}, bytes(p.disk)),
-          el("td", { className: "mono" }, [p.runtime, p.detail].filter(Boolean).join(" · ") || "—"))
+          el("td", { className: "mono" }, [p.runtime, p.detail].filter(Boolean).join(" · ") || "—"),
+          el("td", { className: "actions" }, ...(colima ? [configureButton(p.name)] : [])))
       )
     );
   } else if (!$("#profiles-body").querySelector(".empty")) {
-    $("#profiles-body").replaceChildren(el("tr", {}, el("td", { colSpan: 7, className: "empty" }, "No profiles found")));
+    $("#profiles-body").replaceChildren(el("tr", {}, el("td", { colSpan: 8, className: "empty" }, "No profiles found")));
   }
 }
+
+function configureButton(profile) {
+  const b = el("button", { className: "small secondary" }, "Configure");
+  b.onclick = () => window.openColimaDialog(profile);
+  return b;
+}
+
+$("#configure-colima").onclick = () => window.openColimaDialog($("#profile-select").value || null);
 
 async function applySelection() {
   const provider = $("#provider-select").value;

@@ -22,7 +22,7 @@ macOS + Colima is the first target. The design also supports other Docker Deskto
 - **Pull without running**: **Pull image** in the Run form, **Pull** on each tagged image (to refresh it), and **Pull** on history entries. These pulls use the same AWS profile and sign-in handling as the Images ▸ Local Pull box.
 - **Containers ▸ Containers**: list and filter; **Shell** (`docker exec -it`), start, stop, restart and remove
 - **Containers ▸ Run**: a full `docker run` form, or paste any `docker run …` command to fill it. Shows a live preview of the command, with copy. Runs interactively in a terminal window or detached, and can **save presets** that also appear in the menu bar.
-- **Colima** (shown when Colima is installed): edit any profile's `colima.yaml`. You can edit it with a form, or directly in the **YAML** tab. **Save & Restart** applies the changes.
+- **Colima settings** (Runtime ▸ **Configure…**, or **Configure** on a profile row, when the provider is Colima): a dialog to edit any profile's `colima.yaml`. You can edit it with a form, or directly in the **YAML** tab. **Save & Restart** applies the changes.
   - **Resources**: CPU and memory sliders capped at your Mac's limits; disk, which can only grow; root disk.
   - **Virtual machine**: arch, VM type, runtime and mount type (these four can only be set when a profile is created), CPU type, hostname, model runner, Rosetta, binfmt, nested virtualization, inotify.
   - **Kubernetes**: enable, version, k3s args, API port.
