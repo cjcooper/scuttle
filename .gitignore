@@ -5,3 +5,7 @@ src-tauri/gen/schemas
 node_modules
 src-tauri/icons/android
 src-tauri/icons/ios
+
+# App Store Connect API keys (notarization)
+/private_keys/
+*.p8

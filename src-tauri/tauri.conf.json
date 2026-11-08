@@ -1,7 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Container Desktop",
-  "version": "0.1.0",
   "identifier": "com.it-problems.container-desktop",
   "build": {
     "frontendDist": "../ui"
@@ -39,6 +38,11 @@
       "icons/AppIcon.icon"
     ],
     "publisher": "it-problems",
+    "license": "MIT",
+    "licenseFile": "../LICENSE",
+    "resources": {
+      "../THIRD-PARTY-NOTICES.txt": "THIRD-PARTY-NOTICES.txt"
+    },
     "copyright": "Copyright © 2026 it-problems",
     "shortDescription": "Menu bar controller for Colima, Docker and similar container runtimes",
     "macOS": {
