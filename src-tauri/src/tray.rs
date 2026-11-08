@@ -36,13 +36,17 @@ struct TrayState {
     /// (id, name) of running containers shown in the "Open Shell" submenu.
     containers: Mutex<Vec<(String, String)>>,
     last_status: Mutex<Option<Status>>,
+    /// The badge currently shown, so the icon is only replaced on change.
+    indicator: Mutex<Option<Indicator>>,
+    /// Whether the busy animation task is running.
+    animating: std::sync::atomic::AtomicBool,
 }
 
 pub fn init(app: &AppHandle) -> tauri::Result<()> {
     app.manage(TrayState::default());
     let menu = build_menu(app)?;
     TrayIconBuilder::with_id(TRAY_ID)
-        .icon(Image::from_bytes(include_bytes!("../icons/tray.png"))?)
+        .icon(Image::from_bytes(Indicator::Error.png())?)
         .icon_as_template(true)
         .tooltip("Container Desktop")
         .menu(&menu)
@@ -237,7 +241,86 @@ pub fn update(app: &AppHandle, status: &Status) {
     apply_status(app, status);
 }
 
+/// The menu bar icon's status badge (see `icons/make_tray_icon.py`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Indicator {
+    Running,
+    Stopped,
+    /// Two frames, alternated while starting/stopping/restarting.
+    BusyA,
+    BusyB,
+    /// Engine unreachable, profile missing, not installed, ...
+    Error,
+}
+
+impl Indicator {
+    fn png(self) -> &'static [u8] {
+        match self {
+            Indicator::Running => include_bytes!("../icons/tray/running.png"),
+            Indicator::Stopped => include_bytes!("../icons/tray/stopped.png"),
+            Indicator::BusyA => include_bytes!("../icons/tray/busy-a.png"),
+            Indicator::BusyB => include_bytes!("../icons/tray/busy-b.png"),
+            Indicator::Error => include_bytes!("../icons/tray/error.png"),
+        }
+    }
+
+    pub fn for_status(s: &Status) -> Self {
+        match (s.busy.is_some(), s.vm_state, s.engine_version.is_some()) {
+            (true, _, _) => Indicator::BusyA,
+            (_, VmState::Stopped, _) => Indicator::Stopped,
+            (_, _, true) => Indicator::Running,
+            _ => Indicator::Error,
+        }
+    }
+}
+
+fn set_indicator(app: &AppHandle, indicator: Indicator) {
+    let ts = app.state::<TrayState>();
+    let mut cur = ts.indicator.lock().unwrap();
+    if *cur == Some(indicator) {
+        return;
+    }
+    if let (Some(tray), Ok(img)) = (app.tray_by_id(TRAY_ID), Image::from_bytes(indicator.png())) {
+        let _ = tray.set_icon(Some(img));
+        let _ = tray.set_icon_as_template(true);
+        *cur = Some(indicator);
+    }
+}
+
+/// Alternate the busy frames until the status is no longer busy.
+fn animate_busy(app: &AppHandle) {
+    use std::sync::atomic::Ordering;
+    let ts = app.state::<TrayState>();
+    if ts.animating.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let mut frame = false;
+        loop {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            let busy = app.state::<AppState>().busy().is_some();
+            if !busy {
+                break;
+            }
+            frame = !frame;
+            set_indicator(&app, if frame { Indicator::BusyB } else { Indicator::BusyA });
+        }
+        app.state::<TrayState>().animating.store(false, Ordering::SeqCst);
+        // Settle on the real state.
+        let last = app.state::<TrayState>().last_status.lock().unwrap().clone();
+        if let Some(s) = last.filter(|s| s.busy.is_none()) {
+            set_indicator(&app, Indicator::for_status(&s));
+        }
+    });
+}
+
 fn apply_status(app: &AppHandle, status: &Status) {
+    let indicator = Indicator::for_status(status);
+    set_indicator(app, indicator);
+    if indicator == Indicator::BusyA {
+        animate_busy(app);
+    }
     let ts = app.state::<TrayState>();
     let guard = ts.items.lock().unwrap();
     let Some(items) = guard.as_ref() else { return };
