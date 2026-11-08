@@ -211,6 +211,9 @@ mod live {
     fn aws_live() {
         let p = super::profiles();
         println!("{} profiles: {:?}", p.len(), p);
-        println!("helper for 396608815702: {}", super::uses_ecr_helper("396608815702.dkr.ecr.us-east-1.amazonaws.com"));
+        println!(
+            "helper for 396608815702: {}",
+            super::uses_ecr_helper("396608815702.dkr.ecr.us-east-1.amazonaws.com")
+        );
     }
 }

@@ -75,6 +75,7 @@ function showView(name) {
   if (name === "images") loadImages();
   if (name === "containers") { loadContainers(); renderPresets(); }
   if (name === "runtime") loadProfiles();
+  if (name === "colima") window.loadColimaView?.();
 }
 
 // Sub-tabs inside a view (Images: Local/Build, Containers: Containers/Run).
@@ -135,6 +136,7 @@ $("#vm-restart").onclick = () => vmAction("restart");
 
 async function loadProviders() {
   providers = await call("list_providers");
+  $("#nav-colima").hidden = !providers.some((p) => p.id === "colima" && p.installed);
   const sel = await call("get_selection");
   const ps = $("#provider-select");
   ps.replaceChildren(

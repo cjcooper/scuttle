@@ -224,3 +224,29 @@ body.about-app { display: flex; flex-direction: column; height: 100vh; grid-temp
 /* ---- AWS profile row ---- */
 .aws-row { margin-top: 8px; padding: 8px 10px; border-radius: 8px; border: 1px dashed var(--border); align-items: center; }
 .aws-row .hint { margin: 0; }
+
+/* ---- colima settings ---- */
+.cfg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px 16px; }
+.cfg-field { display: flex; flex-direction: column; gap: 4px; }
+.cfg-field > span { color: var(--muted); font-size: 12px; }
+.cfg-field small { color: var(--muted); font-size: 11px; line-height: 1.35; }
+.cfg-field.wide { grid-column: 1 / -1; }
+.cfg-field.check { flex-direction: row; align-items: flex-start; gap: 8px; }
+.cfg-field.check > div { display: flex; flex-direction: column; gap: 2px; }
+.cfg-field.check > div > span { color: var(--text); font-size: 13px; }
+.cfg-field input:disabled, .cfg-field select:disabled { opacity: .6; }
+.cfg-range { display: flex; align-items: center; gap: 8px; }
+.cfg-range input[type="range"] { flex: 1; min-width: 0; padding: 0; }
+.cfg-range input[type="number"] { width: 80px; min-width: 0; }
+.cfg-range .unit { color: var(--muted); font-size: 12px; width: 30px; }
+.cfg-list-row { display: grid; grid-template-columns: 2fr 2fr auto auto; gap: 8px; align-items: center; margin-bottom: 6px; }
+.cfg-list-row.provision { grid-template-columns: 140px 1fr auto; align-items: start; }
+.cfg-list-row input, .cfg-list-row select, .cfg-list-row textarea { min-width: 0; }
+textarea.yaml, .cfg-field textarea { font-family: ui-monospace, Menlo, monospace; font-size: 12px; width: 100%; }
+.cfg-actions {
+  position: sticky; bottom: 32px; display: flex; gap: 8px; align-items: center;
+  padding: 10px 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+}
+.cfg-actions .hint { margin: 0; }
+.cfg-dirty-on { color: var(--warn) !important; }

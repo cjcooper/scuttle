@@ -17,6 +17,14 @@ macOS + Colima is the first target. The design also supports other Docker Deskto
 - **Images ▸ Build**: build context and Dockerfile pickers, tags, platform, target stage, build args, no-cache and pull options, with streamed BuildKit output
 - **Containers ▸ Containers**: list and filter; **Shell** (`docker exec -it`), start, stop, restart and remove
 - **Containers ▸ Run**: a full `docker run` form, or paste any `docker run …` command to fill it. Shows a live preview of the command, with copy. Runs interactively in a terminal window or detached, and can **save presets** that also appear in the menu bar.
+- **Colima** (shown when Colima is installed): edit any profile's `colima.yaml`. You can edit it with a form, or directly in the **YAML** tab. **Save & Restart** applies the changes.
+  - **Resources**: CPU and memory sliders capped at your Mac's limits; disk, which can only grow; root disk.
+  - **Virtual machine**: arch, VM type, runtime and mount type (these four can only be set when a profile is created), CPU type, hostname, model runner, Rosetta, binfmt, nested virtualization, inotify.
+  - **Kubernetes**: enable, version, k3s args, API port.
+  - **Network**: shared or bridged mode, reachable IP, gateway, DNS resolvers and DNS hosts.
+  - **Mounts**, VM **environment**, **Docker daemon.json**, **provision scripts**, and SSH and port-forwarder options.
+  - Settings the form doesn't know about are kept when saving.
+  - **New profile…** creates and starts a VM with the chosen settings. **Delete profile…** can optionally delete its container data too.
 - **ECR images**: when a Pull or Run image is an ECR URL (`<account>.dkr.ecr.<region>.amazonaws.com/…`), an **AWS profile** picker appears, along with **Sign in (SSO)** (`aws sso login`).
   - Docker then runs with `AWS_PROFILE`. With `docker-credential-ecr-login` configured, that alone is enough; otherwise the app logs in with `aws ecr get-login-password | docker login`.
   - The last profile used is remembered per registry, and presets keep their profile.
@@ -66,6 +74,7 @@ src-tauri/src/
     colima.rs       Colima profiles (colima list/status/start/stop)
     podman.rs       podman machine (macOS/Windows/Linux)
     docker_context.rs  any docker context: Docker Desktop, OrbStack, Rancher Desktop, remote hosts
+  colima_config.rs  read/validate/merge colima.yaml, create-profile flags
   aws.rs            ECR detection, AWS profiles, ECR login / SSO sign-in
   menu.rs           app menu (with About) and Dock-icon switching
   about.rs          About window (license + third-party notices)

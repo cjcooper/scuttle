@@ -6,12 +6,14 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::aws::{self, EcrRegistry};
+use crate::colima_config;
 use crate::engine::{
     self, BuildRequest, ContainerAction, ContainerInfo, DiskUsage, ImageInfo, RunRequest,
 };
 use crate::error::Result;
 use crate::process::LineSink;
 use crate::runtime::Profile;
+use crate::runtime::Provider as _;
 use crate::shell::{self, ShellOptions, ShellTarget};
 use crate::state::{AppState, Preferences, RunPreset, Selection, Settings, Status};
 use crate::terminal::{self, TerminalApp};
@@ -453,4 +455,161 @@ pub fn ecr_info(state: State<'_, AppState>, image: String) -> Option<EcrInfo> {
 #[tauri::command]
 pub async fn aws_sso_login(app: AppHandle, profile: String, task_id: String) -> Result<()> {
     aws::sso_login(&profile, log_sink(&app, &task_id)).await
+}
+
+// ------------------------------------------------------------ colima config
+
+/// Run a colima command for `profile` as a lifecycle operation (busy state,
+/// streamed log, status refresh).
+async fn colima_lifecycle(
+    app: &AppHandle,
+    label: &str,
+    args: Vec<String>,
+    task_id: &str,
+) -> Result<()> {
+    let state = app.state::<AppState>();
+    let guard = state.begin(label)?;
+    let _ = refresh_status(app).await;
+    let sink = log_sink(app, task_id);
+    sink(&format!("$ colima {}", args.join(" ")));
+    let result = async {
+        let mut cmd = crate::process::command("colima")?;
+        cmd.args(&args);
+        crate::process::stream(cmd, sink.clone()).await
+    }
+    .await;
+    match &result {
+        Ok(()) => sink("Done."),
+        Err(e) => sink(&format!("Failed: {e}")),
+    }
+    drop(guard);
+    let _ = refresh_status(app).await;
+    result
+}
+
+#[tauri::command]
+pub fn colima_config_get(profile: String) -> Result<colima_config::ConfigFile> {
+    colima_config::read(&profile)
+}
+
+#[tauri::command]
+pub fn colima_config_defaults() -> colima_config::ColimaConfig {
+    colima_config::ColimaConfig::default()
+}
+
+#[tauri::command]
+pub fn colima_config_save(
+    profile: String,
+    config: colima_config::ColimaConfig,
+) -> Result<colima_config::ConfigFile> {
+    colima_config::write(&profile, &config)?;
+    colima_config::read(&profile)
+}
+
+#[tauri::command]
+pub fn colima_config_save_raw(profile: String, raw: String) -> Result<colima_config::ConfigFile> {
+    colima_config::write_raw(&profile, &raw)?;
+    colima_config::read(&profile)
+}
+
+/// Start (if stopped) or restart (if running) a profile so saved settings
+/// take effect.
+#[tauri::command]
+pub async fn colima_apply(app: AppHandle, profile: String, task_id: String) -> Result<()> {
+    let running = crate::runtime::Colima
+        .profile(&profile)
+        .await?
+        .is_some_and(|p| p.state == crate::runtime::VmState::Running);
+    let verb = if running { "restart" } else { "start" };
+    let label = if running { "Restarting" } else { "Starting" };
+    colima_lifecycle(
+        &app,
+        label,
+        vec![verb.into(), "--profile".into(), profile],
+        &task_id,
+    )
+    .await
+}
+
+#[tauri::command]
+pub async fn colima_create(
+    app: AppHandle,
+    profile: String,
+    config: colima_config::ColimaConfig,
+    task_id: String,
+) -> Result<()> {
+    if crate::runtime::Colima.profile(&profile).await?.is_some() {
+        return Err(crate::error::AppError::msg(format!(
+            "profile `{profile}` already exists"
+        )));
+    }
+    let args = colima_config::create_args(&profile, &config)?;
+    colima_lifecycle(&app, "Creating", args, &task_id).await?;
+    // Daemon config and provision scripts have no flags: save them to the
+    // file Colima just wrote, then restart to apply.
+    if colima_config::needs_file_settings(&config) {
+        let mut saved = colima_config::read(&profile)?.config;
+        saved.docker = config.docker.clone();
+        saved.provision = config.provision.clone();
+        colima_config::write(&profile, &saved)?;
+        let args = vec!["restart".into(), "--profile".into(), profile];
+        colima_lifecycle(&app, "Restarting", args, &task_id).await?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn colima_delete(
+    app: AppHandle,
+    profile: String,
+    delete_data: bool,
+    task_id: String,
+) -> Result<()> {
+    colima_config::config_path(&profile)?; // validates the name
+    let mut args = vec![
+        "delete".into(),
+        "--profile".into(),
+        profile,
+        "--force".into(),
+    ];
+    if delete_data {
+        args.push("--data".into());
+    }
+    colima_lifecycle(&app, "Deleting", args, &task_id).await
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HostInfo {
+    cpus: usize,
+    /// Bytes, when known.
+    memory: Option<u64>,
+}
+
+/// Host CPU count and memory, for sizing VMs.
+#[tauri::command]
+pub async fn host_info() -> HostInfo {
+    let cpus = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(1);
+    let memory = if cfg!(target_os = "macos") {
+        let mut c = tokio::process::Command::new("/usr/sbin/sysctl");
+        c.args(["-n", "hw.memsize"]);
+        crate::process::output(c, crate::process::QUICK)
+            .await
+            .ok()
+            .and_then(|s| s.trim().parse().ok())
+    } else {
+        std::fs::read_to_string("/proc/meminfo").ok().and_then(|m| {
+            let kb: u64 = m
+                .lines()
+                .find(|l| l.starts_with("MemTotal:"))?
+                .split_whitespace()
+                .nth(1)?
+                .parse()
+                .ok()?;
+            Some(kb * 1024)
+        })
+    };
+    HostInfo { cpus, memory }
 }

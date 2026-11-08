@@ -6,6 +6,7 @@
   <title>Container Desktop</title>
   <link rel="stylesheet" href="style.css" />
   <script src="app.js" defer></script>
+  <script src="colima.js" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -14,6 +15,7 @@
       <button class="nav active" data-view="runtime">Runtime</button>
       <button class="nav" data-view="images">Images</button>
       <button class="nav" data-view="containers">Containers</button>
+      <button class="nav" data-view="colima" id="nav-colima" hidden>Colima</button>
     </nav>
     <div class="status-pill" id="status-pill">
       <span class="dot" id="status-dot"></span>
@@ -253,6 +255,49 @@
             <tbody id="presets-body"></tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- Colima configuration -->
+    <section class="view" id="view-colima">
+      <header>
+        <h1>Colima</h1>
+        <div class="toolbar">
+          <select id="cfg-profile" title="Profile"></select>
+          <span class="badge" id="cfg-state"></span>
+          <div class="tabs" data-group="colima">
+            <button class="tab active" data-tab="colima-settings">Settings</button>
+            <button class="tab" data-tab="colima-yaml">YAML</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="card" id="cfg-new" hidden>
+        <div class="row">
+          <label>New profile name
+            <input id="cfg-new-name" placeholder="dev" />
+          </label>
+          <p class="hint grow">Architecture, VM type, runtime and mount type can only be chosen now; they can't be changed once the VM exists.</p>
+        </div>
+      </div>
+
+      <div class="subview active" id="colima-settings">
+        <div id="cfg-form"></div>
+      </div>
+
+      <div class="subview" id="colima-yaml">
+        <div class="card">
+          <p class="hint mono" id="cfg-path"></p>
+          <textarea id="cfg-raw" class="yaml" spellcheck="false" rows="28"></textarea>
+        </div>
+      </div>
+
+      <div class="cfg-actions" id="cfg-actions">
+        <span class="hint grow" id="cfg-dirty"></span>
+        <button id="cfg-delete" class="danger">Delete profile…</button>
+        <button id="cfg-revert" class="ghost">Revert</button>
+        <button id="cfg-save" class="secondary">Save</button>
+        <button id="cfg-apply">Save &amp; Restart</button>
       </div>
     </section>
 

@@ -1,5 +1,6 @@
 mod about;
 mod aws;
+mod colima_config;
 mod commands;
 mod engine;
 mod error;
@@ -52,6 +53,14 @@ pub fn run() {
             commands::open_shell,
             commands::image_shell,
             commands::ecr_info,
+            commands::colima_config_get,
+            commands::colima_config_defaults,
+            commands::colima_config_save,
+            commands::colima_config_save_raw,
+            commands::colima_apply,
+            commands::colima_create,
+            commands::colima_delete,
+            commands::host_info,
             commands::aws_sso_login,
             about::about_info,
             about::close_about,

@@ -25,6 +25,7 @@ thiserror = "2"
 portable-pty = "0.9"
 base64 = "0.22"
 tauri-plugin-opener = "2"
+serde_yaml = "0.9"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt", "macros"] }
