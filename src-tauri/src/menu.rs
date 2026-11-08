@@ -1,6 +1,7 @@
 //! The app menu (shown while a window is open, along with the Dock icon):
 //! Tauri's default menu with our own About window in place of the system's,
-//! and a Dashboard item.
+//! a Dashboard item, and ⌘Q closing the windows rather than quitting: the
+//! app keeps running in the menu bar, whose own menu has the real Quit.
 //!
 //! The app lives in the menu bar; it switches to a regular app (Dock icon and
 //! menu) only while one of its windows is visible.
@@ -11,6 +12,7 @@ use tauri::{AppHandle, Manager};
 pub const MAKER: &str = "it-problems";
 const ABOUT_ID: &str = "app-about";
 const DASHBOARD_ID: &str = "app-dashboard";
+const CLOSE_ID: &str = "app-close";
 
 const MAC: bool = cfg!(target_os = "macos");
 
@@ -42,6 +44,38 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         }
     }
 
+    // ⌘Q closes the windows; quitting is in the menu bar menu.
+    let close = MenuItem::with_id(
+        app,
+        CLOSE_ID,
+        format!("Close {}", app.package_info().name),
+        true,
+        Some("CmdOrCtrl+Q"),
+    )?;
+    let mut replaced = false;
+    for (_, sub) in &subs {
+        for (i, item) in sub.items()?.iter().enumerate() {
+            let text = item
+                .as_predefined_menuitem()
+                .and_then(|p| p.text().ok())
+                .unwrap_or_default();
+            if text.starts_with("Quit") || text == "Exit" {
+                sub.remove_at(i)?;
+                sub.insert(&close, i)?;
+                replaced = true;
+                break;
+            }
+        }
+        if replaced {
+            break;
+        }
+    }
+    if !replaced {
+        if let Some((_, first)) = subs.first() {
+            first.append(&close)?;
+        }
+    }
+
     // Dashboard (⌘0) under Window.
     let dashboard = MenuItem::with_id(app, DASHBOARD_ID, "Dashboard", true, Some("CmdOrCtrl+0"))?;
     if let Some((_, window)) = subs.iter().find(|(t, _)| t == "Window") {
@@ -62,8 +96,22 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
             let _ = crate::about::open(app);
         }
         DASHBOARD_ID => crate::show_dashboard(app),
+        CLOSE_ID => close_windows(app),
         _ => {}
     }
+}
+
+/// Close the app's windows and go back to the menu bar: the dashboard is
+/// hidden (it keeps its state), shell windows and About are closed.
+pub fn close_windows(app: &AppHandle) {
+    for (label, w) in app.webview_windows() {
+        if label == "main" {
+            let _ = w.hide();
+        } else {
+            let _ = w.close();
+        }
+    }
+    update_dock(app, Some("main"));
 }
 
 /// Show the Dock icon and menu while any window is visible; otherwise be a

@@ -61,9 +61,9 @@ Interactive sessions (Shell, interactive Run, presets) open in **built-in shell 
 
 At startup the app copies your login shell's environment, so `AWS_PROFILE` and credential helpers such as `docker-credential-ecr-login` work the same way they do from your own prompt.
 
-**Open at login** (Runtime ▸ Startup, or **Open at Login** in the menu bar) registers the app with the OS: a LaunchAgent on macOS, the Run registry key on Windows, an autostart `.desktop` file on Linux. When opened at login, the app stays in the menu bar and starts the selected Colima or Podman profile if it isn't running. Starting the profile can be switched off separately. Only one copy of the app runs at a time; opening it again shows the dashboard.
+**Open at login** (Runtime ▸ Startup, or **Open at Login** in the menu bar) registers the app with the OS: a LaunchAgent on macOS (tied to the app's bundle identifier, so System Settings › General › Login Items lists it as "Container Desktop", not by the signing certificate's name), the Run registry key on Windows, an autostart `.desktop` file on Linux. When opened at login, the app stays in the menu bar and starts the selected Colima or Podman profile if it isn't running. Starting the profile can be switched off separately. Only one copy of the app runs at a time; opening it again shows the dashboard.
 
-While any window is open (dashboard, a shell, About), the app has a Dock icon and a full menu bar menu. Closing the last window returns it to a menu-bar-only app. Quit from the app menu or the tray.
+While any window is open (dashboard, a shell, About), the app has a Dock icon and a full menu bar menu. Closing the last window returns it to a menu-bar-only app. **⌘Q** (the app menu's **Close Container Desktop**) closes the windows the same way and keeps the app running in the menu bar. To really quit, use **Quit Container Desktop** in the menu bar menu.
 
 A shell window's user and shell choices become the defaults for the next shell, and for the tray's **Shell User ▸** menu.
 
@@ -141,7 +141,7 @@ src-tauri/src/
     podman.rs       podman machine (macOS/Windows/Linux)
     docker_context.rs  any docker context: Docker Desktop, OrbStack, Rancher Desktop, remote hosts
   compose.rs        registered compose stacks: autostart, actions, shutdown on quit, alias expansion
-  login.rs          open at login (tauri-plugin-autostart) and starting the provider then
+  login.rs          open at login (auto-launch LaunchAgent / Run key / .desktop) and starting the provider then
   history.rs        command history (history.json)
   colima_config.rs  read/validate/merge colima.yaml, create-profile flags
   aws.rs            ECR detection, AWS profiles, ECR login / SSO sign-in
