@@ -1,11 +1,16 @@
-//! Open at login: registers the app with the OS (LaunchAgent on macOS, the
-//! Run key on Windows, an autostart .desktop file on Linux) via
-//! tauri-plugin-autostart. Login launches pass `--autostart`; the app then
-//! stays in the menu bar and, if enabled, starts the selected provider.
+//! Open at login: registers the app with the OS (a LaunchAgent on macOS,
+//! the Run key on Windows, an autostart .desktop file on Linux) via the
+//! auto-launch crate. Login launches pass `--autostart`; the app then stays
+//! in the menu bar and, if enabled, starts the selected provider.
+//!
+//! On macOS the LaunchAgent names the app's bundle identifier in
+//! `AssociatedBundleIdentifiers`, so System Settings › Login Items lists it
+//! as "Container Desktop" with its icon rather than by the signing
+//! certificate's name.
 
+use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_autostart::ManagerExt;
 
 use crate::commands::{self, VmAction};
 use crate::error::{AppError, Result};
@@ -14,6 +19,63 @@ use crate::state::AppState;
 
 /// The argument the login item launches the app with.
 pub const ARG: &str = "--autostart";
+
+/// The OS login item for this app.
+pub struct Launcher(AutoLaunch);
+
+impl Launcher {
+    pub fn new(app: &AppHandle) -> Result<Self> {
+        let exe = std::env::current_exe()?;
+        let mut b = AutoLaunchBuilder::new();
+        b.set_app_name(&app.package_info().name).set_args(&[ARG]);
+        #[cfg(target_os = "macos")]
+        {
+            b.set_macos_launch_mode(auto_launch::MacOSLaunchMode::LaunchAgent)
+                .set_bundle_identifiers(&[app.config().identifier.as_str()])
+                .set_app_path(&exe.canonicalize()?.display().to_string());
+        }
+        #[cfg(target_os = "linux")]
+        {
+            let path = app
+                .env()
+                .appimage
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|| exe.display().to_string());
+            b.set_app_path(&path);
+        }
+        #[cfg(windows)]
+        b.set_app_path(&exe.display().to_string());
+        b.build()
+            .map(Launcher)
+            .map_err(|e| AppError::msg(format!("login item: {e}")))
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.0.is_enabled().unwrap_or(false)
+    }
+
+    fn set(&self, enabled: bool) -> Result<()> {
+        let r = if enabled {
+            self.0.enable()
+        } else {
+            self.0.disable()
+        };
+        r.map_err(|e| AppError::msg(format!("could not update the login item: {e}")))
+    }
+}
+
+/// Rewrite an enabled login item so it carries the current settings (bundle
+/// identifier, app location), e.g. one written by an earlier version.
+pub fn refresh(app: &AppHandle) {
+    // Dev builds would repoint the user's login item at target/debug.
+    if cfg!(debug_assertions) {
+        return;
+    }
+    let launcher = app.state::<Launcher>();
+    if launcher.is_enabled() {
+        let _ = launcher.set(true);
+    }
+}
 
 /// Whether this process was started by the login item.
 pub fn launched_at_login() -> bool {
@@ -31,7 +93,7 @@ pub struct LoginItem {
 
 pub fn status(app: &AppHandle) -> LoginItem {
     LoginItem {
-        enabled: app.autolaunch().is_enabled().unwrap_or(false),
+        enabled: app.state::<Launcher>().is_enabled(),
         start_provider: app
             .state::<AppState>()
             .preferences()
@@ -40,13 +102,7 @@ pub fn status(app: &AppHandle) -> LoginItem {
 }
 
 pub fn set_enabled(app: &AppHandle, enabled: bool) -> Result<()> {
-    let launcher = app.autolaunch();
-    let result = if enabled {
-        launcher.enable()
-    } else {
-        launcher.disable()
-    };
-    result.map_err(|e| AppError::msg(format!("could not update the login item: {e}")))?;
+    app.state::<Launcher>().set(enabled)?;
     crate::tray::rebuild(app);
     Ok(())
 }
@@ -84,8 +140,40 @@ pub fn login_item_get(app: AppHandle) -> LoginItem {
 pub fn login_item_set(app: AppHandle, enabled: bool, start_provider: bool) -> Result<LoginItem> {
     app.state::<AppState>()
         .update_settings(|s| s.preferences.start_provider_at_login = start_provider)?;
-    if app.autolaunch().is_enabled().unwrap_or(false) != enabled {
+    if app.state::<Launcher>().is_enabled() != enabled {
         set_enabled(&app, enabled)?;
     }
     Ok(status(&app))
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    /// Writes into $HOME/Library/LaunchAgents, so run with a scratch HOME:
+    /// `HOME=<tmp> cargo test login_plist -- --ignored`
+    #[test]
+    #[ignore]
+    fn login_plist() {
+        let home = std::env::var("HOME").unwrap();
+        assert!(
+            !home.starts_with("/Users/"),
+            "set HOME to a scratch directory"
+        );
+        let mut b = auto_launch::AutoLaunchBuilder::new();
+        b.set_app_name("Container Desktop")
+            .set_args(&[super::ARG])
+            .set_macos_launch_mode(auto_launch::MacOSLaunchMode::LaunchAgent)
+            .set_bundle_identifiers(&["com.it-problems.container-desktop"])
+            .set_app_path("/Applications/Container Desktop.app/Contents/MacOS/container-desktop");
+        let launcher = super::Launcher(b.build().unwrap());
+        launcher.set(true).unwrap();
+        assert!(launcher.is_enabled());
+        let plist = std::fs::read_to_string(format!(
+            "{home}/Library/LaunchAgents/Container Desktop.plist"
+        ))
+        .unwrap();
+        println!("{plist}");
+        assert!(plist.contains("<array><string>com.it-problems.container-desktop</string></array>"));
+        launcher.set(false).unwrap();
+        assert!(!launcher.is_enabled());
+    }
 }

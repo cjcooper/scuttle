@@ -35,10 +35,6 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             show_dashboard(app)
         }))
-        .plugin(tauri_plugin_autostart::init(
-            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            Some(vec![login::ARG]),
-        ))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(app_icon::init())
@@ -108,6 +104,8 @@ pub fn run() {
                 .map(|d| d.join("settings.json"));
             app.manage(state::AppState::new(settings));
             app.manage(shell::ShellSessions::default());
+            app.manage(login::Launcher::new(app.handle())?);
+            login::refresh(app.handle());
             app.manage(history::History::load(
                 app.path()
                     .app_config_dir()

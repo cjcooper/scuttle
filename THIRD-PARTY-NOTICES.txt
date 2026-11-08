@@ -3,7 +3,7 @@ Third-party notices for Container Desktop
 Container Desktop includes the software listed below. Each license is reproduced
 with the crates it covers.
 
-  342 crate(s) under MIT License
+  341 crate(s) under MIT License
   19 crate(s) under Unicode License v3
   6 crate(s) under Apache License 2.0
   5 crate(s) under Mozilla Public License 2.0
@@ -3881,7 +3881,6 @@ Used by:
   objc2-service-management 0.3.2 (https://github.com/madsmtm/objc2)
   objc2-web-kit 0.3.2 (https://github.com/madsmtm/objc2)
   objc2 0.6.5 (https://github.com/madsmtm/objc2)
-  tauri-plugin-autostart 2.7.0 (https://github.com/tauri-apps/plugins-workspace)
   tauri-plugin-dialog 2.8.4 (https://github.com/tauri-apps/plugins-workspace)
   tauri-plugin-fs 2.7.1 (https://github.com/tauri-apps/plugins-workspace)
   tauri-plugin-opener 2.7.2 (https://github.com/tauri-apps/plugins-workspace)
