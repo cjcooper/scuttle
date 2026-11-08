@@ -3,7 +3,7 @@ Third-party notices for Container Desktop
 Container Desktop includes the software listed below. Each license is reproduced
 with the crates it covers.
 
-  331 crate(s) under MIT License
+  342 crate(s) under MIT License
   19 crate(s) under Unicode License v3
   6 crate(s) under Apache License 2.0
   5 crate(s) under Mozilla Public License 2.0
@@ -961,6 +961,7 @@ MIT License
 
 Used by:
   cfg-if 1.0.5 (https://github.com/rust-lang/cfg-if)
+  socket2 0.6.5 (https://github.com/rust-lang/socket2)
   toml_datetime 0.6.3 (https://github.com/toml-rs/toml)
 
 Copyright (c) 2014 Alex Crichton
@@ -2303,6 +2304,7 @@ MIT License
 
 Used by:
   dirs-sys 0.5.0 (https://github.com/dirs-dev/dirs-sys-rs)
+  dirs 6.0.0 (https://github.com/soc/dirs-rs)
   dirs 7.0.0 (https://codeberg.org/dirs/dirs-rs)
 
 Copyright (c) 2018-2019 dirs-rs contributors
@@ -3680,6 +3682,35 @@ SOFTWARE.
 MIT License
 
 Used by:
+  auto-launch 0.6.0 (https://github.com/zzzgydi/auto-launch.git)
+
+MIT License
+
+Copyright (c) 2022 zzzgydi
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+================================================================================
+MIT License
+
+Used by:
   muda 0.20.0 (https://github.com/tauri-apps/muda)
   tray-icon 0.25.1 (https://github.com/tauri-apps/tray-icon)
 
@@ -3803,6 +3834,34 @@ SOFTWARE.
 MIT License
 
 Used by:
+  smappservice-rs 0.1.3 (https://github.com/gethopp/smappservice-rs)
+
+MIT License
+
+Copyright (c) 2025 iparaskev
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+MIT License
+
+Used by:
   container-desktop 0.1.0
   block2 0.6.2 (https://github.com/madsmtm/objc2)
   brotli-decompressor 6.3.0 (https://github.com/dropbox/rust-brotli-decompressor)
@@ -3818,11 +3877,15 @@ Used by:
   objc2-exception-helper 0.1.1 (https://github.com/madsmtm/objc2)
   objc2-foundation 0.3.2 (https://github.com/madsmtm/objc2)
   objc2-quartz-core 0.3.2 (https://github.com/madsmtm/objc2)
+  objc2-security 0.3.2 (https://github.com/madsmtm/objc2)
+  objc2-service-management 0.3.2 (https://github.com/madsmtm/objc2)
   objc2-web-kit 0.3.2 (https://github.com/madsmtm/objc2)
   objc2 0.6.5 (https://github.com/madsmtm/objc2)
+  tauri-plugin-autostart 2.7.0 (https://github.com/tauri-apps/plugins-workspace)
   tauri-plugin-dialog 2.8.4 (https://github.com/tauri-apps/plugins-workspace)
   tauri-plugin-fs 2.7.1 (https://github.com/tauri-apps/plugins-workspace)
   tauri-plugin-opener 2.7.2 (https://github.com/tauri-apps/plugins-workspace)
+  tauri-plugin-single-instance 2.5.5 (https://github.com/tauri-apps/plugins-workspace)
   webview2-com-macros 0.8.1 (https://github.com/wravery/webview2-rs)
   webview2-com-sys 0.39.1 (https://github.com/wravery/webview2-rs)
   webview2-com 0.39.1 (https://github.com/wravery/webview2-rs)
@@ -3833,6 +3896,7 @@ Used by:
   windows-interface 0.59.3 (https://github.com/microsoft/windows-rs)
   windows-link 0.2.1 (https://github.com/microsoft/windows-rs)
   windows-numerics 0.3.1 (https://github.com/microsoft/windows-rs)
+  windows-registry 0.6.1 (https://github.com/microsoft/windows-rs)
   windows-result 0.4.1 (https://github.com/microsoft/windows-rs)
   windows-strings 0.5.1 (https://github.com/microsoft/windows-rs)
   windows-sys 0.61.2 (https://github.com/microsoft/windows-rs)
@@ -4531,6 +4595,7 @@ MIT License
 
 Used by:
   nix 0.28.0 (https://github.com/nix-rust/nix)
+  nix 0.31.3 (https://github.com/nix-rust/nix)
 
 The MIT License (MIT)
 
@@ -4675,6 +4740,35 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+
+================================================================================
+MIT License
+
+Used by:
+  os_info 3.15.0 (https://github.com/stanislav-tkach/os_info)
+
+The MIT License (MIT)
+
+Copyright (c) 2017 Stanislav Tkach
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 
 ================================================================================

@@ -42,6 +42,8 @@ pub struct Preferences {
     pub custom_user: String,
     /// `"auto"` (bash if present, else sh) or a path such as `/bin/bash`.
     pub shell: String,
+    /// When opened at login, start the selected provider/profile.
+    pub start_provider_at_login: bool,
 }
 
 impl Default for Preferences {
@@ -51,6 +53,7 @@ impl Default for Preferences {
             shell_user: String::new(),
             custom_user: String::new(),
             shell: "auto".into(),
+            start_provider_at_login: true,
         }
     }
 }

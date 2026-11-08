@@ -6,6 +6,7 @@ mod commands;
 mod engine;
 mod error;
 mod history;
+mod login;
 mod menu;
 mod process;
 mod runtime;
@@ -28,6 +29,15 @@ pub fn show_dashboard(app: &AppHandle) {
 pub fn run() {
     process::inherit_login_env();
     let app = tauri::Builder::default()
+        // First, so a second launch (e.g. opening the app while the login
+        // copy runs) just shows the existing dashboard.
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
+            show_dashboard(app)
+        }))
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec![login::ARG]),
+        ))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(app_icon::init())
@@ -64,6 +74,8 @@ pub fn run() {
             commands::colima_create,
             commands::colima_delete,
             commands::host_info,
+            login::login_item_get,
+            login::login_item_set,
             history::history_list,
             history::history_delete,
             history::history_clear,
@@ -95,10 +107,17 @@ pub fn run() {
 
             // Menu bar app with a Dock icon and full menu while a window is open.
             menu::install(app.handle())?;
-            menu::update_dock(app.handle(), None);
 
             tray::init(app.handle())?;
             tray::spawn_status_poller(app.handle().clone());
+            // Opened at login: stay in the menu bar and start the provider.
+            // Otherwise show the dashboard (created hidden).
+            if login::launched_at_login() {
+                login::on_login_launch(app.handle());
+            } else {
+                show_dashboard(app.handle());
+            }
+            menu::update_dock(app.handle(), None);
             Ok(())
         })
         .on_window_event(|window, event| match event {

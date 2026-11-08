@@ -859,6 +859,40 @@ $("#history-clear").onclick = async () => {
 };
 listen("history", (e) => { historyEntries = e.payload; if ($("#view-history").classList.contains("active")) renderHistory(); });
 
+// ------------------------------------------------------------ open at login
+
+let loginItem = null;
+
+function renderLoginItem(item) {
+  loginItem = item;
+  $("#login-enabled").checked = item.enabled;
+  $("#login-start").checked = item.startProvider;
+  $("#login-start").disabled = !item.enabled;
+  const manages = status?.managesVm;
+  $("#login-start-label").textContent = manages
+    ? `…and start ${status.providerName} (${status.profile})`
+    : "…and start the selected profile (Colima / Podman only)";
+}
+
+async function saveLoginItem() {
+  try {
+    renderLoginItem(await call("login_item_set", {
+      enabled: $("#login-enabled").checked,
+      startProvider: $("#login-start").checked,
+    }));
+  } catch {
+    renderLoginItem(await call("login_item_get"));
+  }
+}
+$("#login-enabled").onchange = saveLoginItem;
+$("#login-start").onchange = saveLoginItem;
+listen("login-item", (e) => renderLoginItem(e.payload));
+// The label names the selected provider/profile.
+listen("status", () => {
+  if (loginItem) renderLoginItem(loginItem);
+  else call("login_item_get", undefined, { quiet: true }).then(renderLoginItem).catch(() => {});
+});
+
 // -------------------------------------------------------------------- boot
 
 listen("status", (e) => {

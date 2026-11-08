@@ -176,6 +176,14 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
             &items.prune_cache,
             &sep()?,
             &item("open", "Open Dashboard…", true)?,
+            &CheckMenuItem::with_id(
+                app,
+                "login",
+                "Open at Login",
+                true,
+                crate::login::status(app).enabled,
+                None::<&str>,
+            )?,
             &item("about", "About Container Desktop", true)?,
             &sep()?,
             &PredefinedMenuItem::quit(app, Some("Quit Container Desktop"))?,
@@ -192,6 +200,14 @@ fn as_refs<T: IsMenuItem<Wry>>(v: &[T]) -> Vec<&dyn IsMenuItem<Wry>> {
 fn handle_menu(app: &AppHandle, id: &str) {
     if id == "open" {
         crate::show_dashboard(app);
+        return;
+    }
+    if id == "login" {
+        let enable = !crate::login::status(app).enabled;
+        if let Err(e) = crate::login::set_enabled(app, enable) {
+            commands::log_sink(app, TRAY_TASK)(&e.to_string());
+        }
+        let _ = tauri::Emitter::emit(app, "login-item", crate::login::status(app));
         return;
     }
     if id == "about" {
