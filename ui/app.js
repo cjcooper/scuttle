@@ -48,8 +48,10 @@ async function call(cmd, args, { quiet = false } = {}) {
   }
 }
 
-async function confirmAction(message, title = "Confirm") {
-  if (dialog?.ask) return dialog.ask(message, { title, kind: "warning" });
+async function confirmAction(message, title = "Confirm", okLabel) {
+  if (dialog?.ask) {
+    return dialog.ask(message, { title, kind: "warning", ...(okLabel ? { okLabel, cancelLabel: "Cancel" } : {}) });
+  }
   return window.confirm(message);
 }
 
@@ -119,6 +121,8 @@ function renderStatus(s) {
   $("#vm-start").disabled = !s.managesVm || !!s.busy || running;
   $("#vm-stop").disabled = !s.managesVm || !!s.busy || !running;
   $("#vm-restart").disabled = !s.managesVm || !!s.busy || !running;
+  $("#vm-delete-data").hidden = s.providerId !== "colima";
+  $("#vm-delete-data").disabled = !!s.busy;
   for (const id of ["#prune-dangling", "#prune-unused", "#prune-cache", "#build-submit", "#pull-submit", "#run-submit", "#run-pull"]) {
     $(id).disabled = !engineUp() || !!s.busy;
   }
@@ -135,6 +139,28 @@ async function vmAction(action) {
 $("#vm-start").onclick = () => vmAction("start");
 $("#vm-stop").onclick = () => vmAction("stop");
 $("#vm-restart").onclick = () => vmAction("restart");
+
+// colima delete --data for the selected profile.
+$("#vm-delete-data").onclick = async () => {
+  const profile = status?.profile;
+  if (!profile || status?.providerId !== "colima") return;
+  const ok = await confirmAction(
+    `Delete ALL data for the Colima profile “${profile}”?\n\n` +
+      "This runs “colima delete --data”: the VM is stopped and removed, along with every image, " +
+      "container and volume in it. Images will need to be pulled or rebuilt again.\n\n" +
+      "This can't be undone.",
+    "Delete Colima data",
+    "Delete Data"
+  );
+  if (!ok) return;
+  $("#activity").open = true;
+  try {
+    await call("colima_delete", { profile, deleteData: true, taskId: newTask("colima") });
+    toast(`Deleted ${profile} and all its data`);
+  } finally {
+    loadProfiles();
+  }
+};
 
 // ---------------------------------------------------------- provider/profile
 
