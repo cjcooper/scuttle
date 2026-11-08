@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    container_desktop_lib::run()
+    scuttle_lib::run()
 }

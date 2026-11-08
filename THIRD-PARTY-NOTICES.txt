@@ -1,6 +1,6 @@
-Third-party notices for Container Desktop
+Third-party notices for Scuttle
 
-Container Desktop includes the software listed below. Each license is reproduced
+Scuttle includes the software listed below. Each license is reproduced
 with the crates it covers.
 
   341 crate(s) under MIT License
@@ -3862,7 +3862,7 @@ SOFTWARE.
 MIT License
 
 Used by:
-  container-desktop 0.1.0
+  scuttle 0.1.0
   block2 0.6.2 (https://github.com/madsmtm/objc2)
   brotli-decompressor 6.3.0 (https://github.com/dropbox/rust-brotli-decompressor)
   dispatch2 0.3.1 (https://github.com/madsmtm/objc2)

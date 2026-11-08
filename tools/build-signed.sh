@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Release build: bumps the version, builds Container Desktop.app and the .dmg signed
+# Release build: bumps the version, builds Scuttle.app and the .dmg signed
 # with a Developer ID Application certificate, notarized by Apple and stapled
 # (so Gatekeeper opens them on any Mac), then commits the bump and tags it.
 # A plain `cargo tauri build` stays unsigned and leaves the version alone.
@@ -35,7 +35,7 @@
 #     APPLE_ID           Apple ID email
 #     APPLE_TEAM_ID      team ID
 #     APPLE_PASSWORD     app-specific password; if unset it is read from the
-#                        login keychain item "container-desktop-notarization" for
+#                        login keychain item "scuttle-notarization" for
 #                        APPLE_ID (see README)
 set -euo pipefail
 
@@ -127,8 +127,8 @@ if (( notarize )); then
   elif [[ -n "${APPLE_ID:-}" ]]; then
     [[ -n "${APPLE_TEAM_ID:-}" ]] || die "APPLE_TEAM_ID is required with APPLE_ID"
     if [[ -z "${APPLE_PASSWORD:-}" ]]; then
-      APPLE_PASSWORD="$(security find-generic-password -s container-desktop-notarization -a "$APPLE_ID" -w 2>/dev/null)" \
-        || die "APPLE_PASSWORD not set and no keychain item \"container-desktop-notarization\" for $APPLE_ID"
+      APPLE_PASSWORD="$(security find-generic-password -s scuttle-notarization -a "$APPLE_ID" -w 2>/dev/null)" \
+        || die "APPLE_PASSWORD not set and no keychain item \"scuttle-notarization\" for $APPLE_ID"
     fi
     export APPLE_ID APPLE_TEAM_ID APPLE_PASSWORD
     notary_auth=(--apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD")
@@ -185,7 +185,7 @@ if [[ "$bump" != none ]]; then
   trap - EXIT
   git add "$manifest" "$lockfile"
   git commit -q -m "chore(release): v$new_version"
-  git tag -a "v$new_version" -m "Container Desktop $new_version"
+  git tag -a "v$new_version" -m "Scuttle $new_version"
   echo "Committed and tagged v$new_version (not pushed)"
 fi
 

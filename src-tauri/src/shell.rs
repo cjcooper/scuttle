@@ -259,7 +259,7 @@ fn docker_args(
                             .duration_since(std::time::UNIX_EPOCH)
                             .map(|d| d.as_millis())
                             .unwrap_or_default();
-                        format!("cd-shell-{ms}")
+                        format!("scuttle-shell-{ms}")
                     });
                 req.name = Some(name.clone());
                 Some(name)

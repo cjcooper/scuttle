@@ -524,26 +524,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "container-desktop"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "auto-launch",
- "base64 0.22.1",
- "portable-pty",
- "serde",
- "serde_json",
- "serde_yaml",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-opener",
- "tauri-plugin-single-instance",
- "thiserror 2.0.21",
- "tokio",
-]
-
-[[package]]
 name = "cookie"
 version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3106,6 +3086,26 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "scuttle"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "auto-launch",
+ "base64 0.22.1",
+ "portable-pty",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-opener",
+ "tauri-plugin-single-instance",
+ "thiserror 2.0.21",
+ "tokio",
+]
 
 [[package]]
 name = "selectors"

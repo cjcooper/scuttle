@@ -1,4 +1,4 @@
-# Builds Container Desktop natively on each desktop OS. Each runner produces
+# Builds Scuttle natively on each desktop OS. Each runner produces
 # the bundles for its own system (see src-tauri/tauri.<os>.conf.json):
 #   macOS   → .app and .dmg
 #   Linux   → .deb, .rpm and .AppImage
@@ -61,7 +61,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: container-desktop-${{ matrix.name }}
+          name: scuttle-${{ matrix.name }}
           path: |
             src-tauri/target/release/bundle/dmg/*.dmg
             src-tauri/target/release/bundle/deb/*.deb

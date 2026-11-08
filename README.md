@@ -1,8 +1,10 @@
-# Container Desktop
+# Scuttle
 
 A menu bar app for controlling local container runtimes: start/stop the VM, clean up images, and build images. Built with Rust + [Tauri 2](https://tauri.app).
 
 macOS + Colima is the first target. The design also supports other Docker Desktop replacements on other operating systems.
+
+Scuttle was previously called **Container Desktop**. On first start it copies settings and history from the old app's config folder (`com.it-problems.container-desktop`). A release build also replaces the old "Container Desktop" login item with a "Scuttle" one.
 
 ## Features
 
@@ -61,9 +63,9 @@ Interactive sessions (Shell, interactive Run, presets) open in **built-in shell 
 
 At startup the app copies your login shell's environment, so `AWS_PROFILE` and credential helpers such as `docker-credential-ecr-login` work the same way they do from your own prompt.
 
-**Open at login** (Runtime ▸ Startup, or **Open at Login** in the menu bar) registers the app with the OS: a LaunchAgent on macOS (tied to the app's bundle identifier, so System Settings › General › Login Items lists it as "Container Desktop", not by the signing certificate's name), the Run registry key on Windows, an autostart `.desktop` file on Linux. When opened at login, the app stays in the menu bar and starts the selected Colima or Podman profile if it isn't running. Starting the profile can be switched off separately. Only one copy of the app runs at a time; opening it again shows the dashboard.
+**Open at login** (Runtime ▸ Startup, or **Open at Login** in the menu bar) registers the app with the OS: a LaunchAgent on macOS (tied to the app's bundle identifier, so System Settings › General › Login Items lists it as "Scuttle", not by the signing certificate's name), the Run registry key on Windows, an autostart `.desktop` file on Linux. When opened at login, the app stays in the menu bar and starts the selected Colima or Podman profile if it isn't running. Starting the profile can be switched off separately. Only one copy of the app runs at a time; opening it again shows the dashboard.
 
-While any window is open (dashboard, a shell, About), the app has a Dock icon and a full menu bar menu. Closing the last window returns it to a menu-bar-only app. **⌘Q** (the app menu's **Close Container Desktop**) closes the windows the same way and keeps the app running in the menu bar. To really quit, use **Quit Container Desktop** in the menu bar menu.
+While any window is open (dashboard, a shell, About), the app has a Dock icon and a full menu bar menu. Closing the last window returns it to a menu-bar-only app. **⌘Q** (the app menu's **Close Scuttle**) closes the windows the same way and keeps the app running in the menu bar. To really quit, use **Quit Scuttle** in the menu bar menu.
 
 A shell window's user and shell choices become the defaults for the next shell, and for the tray's **Shell User ▸** menu.
 
@@ -119,7 +121,7 @@ One-time setup:
      ```
    - **Apple ID**: create an app-specific password at account.apple.com → Sign-In and Security, store it in the login keychain, and set:
      ```sh
-     security add-generic-password -s container-desktop-notarization -a <apple-id> -w
+     security add-generic-password -s scuttle-notarization -a <apple-id> -w
      export APPLE_ID=<apple-id> APPLE_TEAM_ID=<TEAM_ID>
      ```
 
@@ -157,7 +159,7 @@ ui/                 dashboard (index.html, app.js, style.css), shell window (she
 
 Each runtime exposes a Docker-compatible API socket, so a provider only has to say where the engine is (`EngineTarget`) and, optionally, how to start and stop it. To add a runtime such as Rancher Desktop's `rdctl` or WSL, implement `runtime::Provider` and register it in `runtime::all()`.
 
-The selection is saved to the app config directory as `settings.json`. On macOS that is `~/Library/Application Support/com.it-problems.container-desktop/`.
+The selection is saved to the app config directory as `settings.json`. On macOS that is `~/Library/Application Support/com.it-problems.scuttle/`.
 
 ## Next steps
 

@@ -72,7 +72,7 @@ fn script_path(ext: &str) -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_nanos())
         .unwrap_or_default();
-    std::env::temp_dir().join(format!("container-desktop-{nanos}.{ext}"))
+    std::env::temp_dir().join(format!("scuttle-{nanos}.{ext}"))
 }
 
 /// Launch `command_line` (already shell-quoted) in a new terminal window.
@@ -138,7 +138,7 @@ fn unix_script(command_line: &str, title: &str) -> String {
 mod tests {
     #[test]
     fn script_runs_command_line() {
-        let dir = std::env::temp_dir().join(format!("cd-term-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("scuttle-term-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let script = dir.join("t.sh");
         std::fs::write(
