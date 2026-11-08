@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <path d="M319.7,415.0 L512.0,526.0 L512.0,748.0 L319.7,637.0 Z" fill="#ffffff" fill-opacity="0.0" stroke="#1f5bd6" stroke-width="40" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M512.0,526.0 L704.3,415.0 L704.3,637.0 L512.0,748.0 Z" fill="#ffffff" fill-opacity="0.0" stroke="#1f5bd6" stroke-width="40" stroke-linejoin="round" stroke-linecap="round"/>
+  <line x1="371.7" y1="489.0" x2="371.7" y2="623.0" stroke="#1f5bd6" stroke-width="26" stroke-linecap="round"/>
+  <line x1="415.9" y1="514.5" x2="415.9" y2="648.5" stroke="#1f5bd6" stroke-width="26" stroke-linecap="round"/>
+  <line x1="460.1" y1="540.0" x2="460.1" y2="674.0" stroke="#1f5bd6" stroke-width="26" stroke-linecap="round"/>
+  <line x1="563.9" y1="540.0" x2="563.9" y2="674.0" stroke="#1f5bd6" stroke-width="26" stroke-linecap="round"/>
+  <line x1="608.1" y1="514.5" x2="608.1" y2="648.5" stroke="#1f5bd6" stroke-width="26" stroke-linecap="round"/>
+  <line x1="652.3" y1="489.0" x2="652.3" y2="623.0" stroke="#1f5bd6" stroke-width="26" stroke-linecap="round"/>
+  <path d="M512.0,304.0 L704.3,415.0 L512.0,526.0 L319.7,415.0 Z" fill="#f29d0c" stroke="#f29d0c" stroke-width="40" stroke-linejoin="round"/>
+</svg>

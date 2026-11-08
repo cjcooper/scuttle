@@ -198,6 +198,11 @@ body.about-app { display: flex; flex-direction: column; height: 100vh; grid-temp
 .about-main h1 { margin: 8px 0 0; font-size: 24px; }
 .about-main p { margin: 0 0 10px; }
 .about-icon { width: 96px; height: 96px; }
+.about-icon.dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  .about-icon.light { display: none; }
+  .about-icon.dark { display: inline-block; }
+}
 .muted { color: var(--muted); }
 .about-app a { color: var(--accent); text-decoration: none; cursor: pointer; }
 .about-app a:hover { text-decoration: underline; }

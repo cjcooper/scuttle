@@ -1,4 +1,5 @@
 mod about;
+mod app_icon;
 mod aws;
 mod colima_config;
 mod commands;
@@ -28,6 +29,7 @@ pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(app_icon::init())
         .invoke_handler(tauri::generate_handler![
             commands::list_providers,
             commands::list_profiles,
@@ -92,6 +94,9 @@ pub fn run() {
                 api.prevent_close();
                 let _ = window.hide();
                 menu::update_dock(window.app_handle(), Some("main"));
+            }
+            WindowEvent::ThemeChanged(theme) => {
+                app_icon::theme_changed(window.app_handle(), window.label(), *theme)
             }
             WindowEvent::Destroyed => {
                 // A shell window closed: end its session.
