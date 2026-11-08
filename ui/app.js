@@ -371,9 +371,12 @@ $("#pull-form").onsubmit = async (e) => {
   $("#pull-submit").disabled = true;
   $("#activity").open = true;
   try {
-    await call("pull_image", { image, awsProfile: awsProfile("pull"), taskId: newTask("pull") });
+    await withAwsSignIn(() =>
+      invoke("pull_image", { image, awsProfile: awsProfile("pull"), taskId: newTask("pull") }));
     toast(`Pulled ${image}`);
     loadImages();
+  } catch (e) {
+    toast(String(e), true);
   } finally {
     $("#pull-submit").disabled = !engineUp();
   }
@@ -414,7 +417,29 @@ async function updateAws(prefix, image, preferred) {
   if (want && !names.includes(want)) names.unshift(want);
   sel.replaceChildren(...(names.length ? names : [""]).map((p) => el("option", { value: p }, p || "(no profiles in ~/.aws)")));
   sel.value = want ?? info.profile ?? names[0] ?? "";
-  $(`#${prefix}-aws-hint`).textContent = `ECR account ${info.registry.account} · ${info.registry.region}`;
+  const r = info.registry;
+  $(`#${prefix}-aws-hint`).textContent = r.account
+    ? `docker-credential-ecr-login · account ${r.account} · ${r.region}`
+    : `docker-credential-ecr-login · ${r.host}`;
+}
+
+const SIGN_IN = /AWS sign-in required for profile `([^`]+)`/;
+
+/**
+ * Run `action`; if it fails because an AWS profile's SSO session expired,
+ * offer to sign in and try once more.
+ */
+async function withAwsSignIn(action) {
+  try {
+    return await action();
+  } catch (e) {
+    const m = String(e).match(SIGN_IN);
+    if (!m) throw e;
+    if (!(await confirmAction(`${e}\n\nSign in with “aws sso login --profile ${m[1]}” now? Your browser will open.`, "AWS sign-in"))) throw e;
+    $("#activity").open = true;
+    await call("aws_sso_login", { profile: m[1], taskId: newTask("sso") });
+    return await action();
+  }
 }
 
 function awsProfile(prefix) {
@@ -648,7 +673,13 @@ $("#run-copy").onclick = async () => {
 };
 
 async function runRequest(req) {
-  const id = await call("run_container", { request: req });
+  let id;
+  try {
+    id = await withAwsSignIn(() => invoke("run_container", { request: req }));
+  } catch (e) {
+    toast(String(e), true);
+    throw e;
+  }
   if (id) {
     toast(`Started ${id.slice(0, 12)}`);
     logActivity(`Started container ${id}`);

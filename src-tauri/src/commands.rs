@@ -131,30 +131,42 @@ impl Prune {
     }
 }
 
-/// A docker client for pulling/running `image`: when it is an ECR image and
-/// an AWS profile is given, docker runs with `AWS_PROFILE` and is logged in
-/// if needed. The profile is remembered for the registry.
+/// A docker client for pulling/running `image`. When docker routes the
+/// image's registry to `docker-credential-ecr-login`, docker runs with
+/// `AWS_PROFILE` (the given profile, else the one last used for the
+/// registry), and, if the image will be pulled, the helper is checked first
+/// so an expired SSO session is reported instead of docker's "no basic auth
+/// credentials". The profile is remembered for the registry.
 pub async fn docker_for_image(
     app: &AppHandle,
     image: &str,
     aws_profile: Option<&str>,
+    pull: bool,
     sink: &LineSink,
 ) -> Result<engine::Docker> {
     let state = app.state::<AppState>();
     let docker = state.docker().await?;
-    let profile = aws_profile.map(str::trim).filter(|p| !p.is_empty());
-    match (aws::ecr_registry(image), profile) {
-        (Some(registry), Some(profile)) => {
-            let docker = docker.with_aws_profile(Some(profile));
-            aws::ensure_login(&docker, &registry, profile, sink).await?;
-            let _ = state.update_settings(|s| {
-                s.ecr_profiles
-                    .insert(registry.host.clone(), profile.to_string());
-            });
-            Ok(docker)
-        }
-        _ => Ok(docker),
+    let Some(registry) = aws::ecr_registry(image) else {
+        return Ok(docker);
+    };
+    let profile = aws_profile
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+        .map(str::to_string)
+        .or_else(|| state.settings().ecr_profiles.get(&registry.host).cloned());
+    let Some(profile) = profile else {
+        // No profile chosen: docker runs with the default AWS credentials.
+        return Ok(docker);
+    };
+    let docker = docker.with_aws_profile(Some(&profile));
+    if pull || !docker.image_exists(image).await {
+        aws::check_credentials(&registry, &profile, sink).await?;
     }
+    let _ = state.update_settings(|s| {
+        s.ecr_profiles
+            .insert(registry.host.clone(), profile.clone());
+    });
+    Ok(docker)
 }
 
 /// Open an integrated shell window: `docker exec -it` into a running
@@ -323,7 +335,7 @@ pub async fn pull_image(
     task_id: String,
 ) -> Result<()> {
     let sink = log_sink(&app, &task_id);
-    let result = match docker_for_image(&app, &image, aws_profile.as_deref(), &sink).await {
+    let result = match docker_for_image(&app, &image, aws_profile.as_deref(), true, &sink).await {
         Ok(docker) => docker.pull(image.trim(), sink.clone()).await,
         Err(e) => Err(e),
     };
@@ -429,6 +441,8 @@ pub fn image_shell(app: AppHandle, image: String) -> Result<()> {
 #[serde(rename_all = "camelCase")]
 pub struct EcrInfo {
     registry: EcrRegistry,
+    /// The error prefix for expired/invalid credentials (see aws.rs).
+    sign_in_required: &'static str,
     profiles: Vec<String>,
     /// Suggested profile: last used for this registry, else `AWS_PROFILE`,
     /// else `default`.
@@ -447,6 +461,7 @@ pub fn ecr_info(state: State<'_, AppState>, image: String) -> Option<EcrInfo> {
         .or_else(|| profiles.first().cloned());
     Some(EcrInfo {
         registry,
+        sign_in_required: aws::SIGN_IN_REQUIRED,
         profiles,
         profile,
     })

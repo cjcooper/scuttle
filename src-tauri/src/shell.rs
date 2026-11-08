@@ -320,6 +320,7 @@ pub async fn start(
                 &app,
                 &request.image,
                 request.aws_profile.as_deref(),
+                false,
                 &sink,
             )
             .await?

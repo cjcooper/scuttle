@@ -29,8 +29,8 @@ macOS + Colima is the first target. The design also supports other Docker Deskto
     - disk used by each profile's VM and container data, with **Delete with data** (`colima delete --data`);
     - **Clear download cache** (`colima prune --all`);
     - **Delete everything**: every profile and its data, behind a typed `DELETE ALL` confirmation.
-- **ECR images**: when a Pull or Run image is an ECR URL (`<account>.dkr.ecr.<region>.amazonaws.com/…`), an **AWS profile** picker appears, along with **Sign in (SSO)** (`aws sso login`).
-  - Docker then runs with `AWS_PROFILE`. With `docker-credential-ecr-login` configured, that alone is enough; otherwise the app logs in with `aws ecr get-login-password | docker login`.
+- **ECR images**: when `~/.docker/config.json` routes an image's registry to `docker-credential-ecr-login` (`credHelpers` or `credsStore`), Pull and Run show an **AWS profile** picker and docker runs with `AWS_PROFILE` set.
+  - Before pulling, the app asks the helper for credentials. An expired SSO session then shows "AWS sign-in required for profile …" with **Sign in (SSO)** (`aws sso login`) and a retry, instead of docker's "no basic auth credentials". This works in shell windows too.
   - The last profile used is remembered per registry, and presets keep their profile.
   - Pasting `AWS_PROFILE=x docker run …` fills the picker.
 - **About** window (app menu, or the tray): version, maker, the MIT license, and every third-party license.

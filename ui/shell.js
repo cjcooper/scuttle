@@ -72,11 +72,31 @@ function userLabel(u) {
   return { "": "default user", root: "root", host: "your user" }[u] ?? u;
 }
 
+const SIGN_IN = /AWS sign-in required for profile `([^`]+)`/;
+let signInProfile = null;
+
 function ended(message) {
   const box = $("#shell-ended");
   box.hidden = !message;
-  box.textContent = message ?? "";
+  $("#shell-ended-text").textContent = message ?? "";
+  // An expired AWS SSO session: offer sign-in, then reconnect.
+  signInProfile = message?.match(SIGN_IN)?.[1] ?? null;
+  $("#sso").hidden = !signInProfile;
 }
+
+$("#sso").onclick = async () => {
+  const profile = signInProfile;
+  $("#sso").disabled = true;
+  term.write(`\r\n\x1b[2m$ aws sso login --profile ${profile} (complete it in your browser)\x1b[0m\r\n`);
+  try {
+    await invoke("aws_sso_login", { profile, taskId: `sso-${label}` });
+    await connect(options);
+  } catch (e) {
+    ended(String(e));
+  } finally {
+    $("#sso").disabled = false;
+  }
+};
 
 async function connect(newOptions) {
   ended(null);

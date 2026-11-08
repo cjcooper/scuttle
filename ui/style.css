@@ -182,7 +182,8 @@ body.shell-app { display: flex; flex-direction: column; height: 100vh; grid-temp
 .shell-tools { display: flex; align-items: center; gap: 6px; flex: none; }
 .shell-tools .segmented { width: 220px; }
 .shell-tools select, .shell-tools input { min-width: 0; width: 140px; padding: 3px 6px; }
-.shell-ended { padding: 6px 12px; background: color-mix(in srgb, var(--danger) 15%, var(--panel)); font-size: 12px; }
+.shell-ended[hidden] { display: none; }
+.shell-ended { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 6px 12px; background: color-mix(in srgb, var(--danger) 15%, var(--panel)); font-size: 12px; }
 .shell-term { flex: 1; min-height: 0; padding: 6px 4px 6px 10px; }
 .shell-term .xterm { height: 100%; }
 @media (prefers-color-scheme: dark) { body.shell-app, .shell-term { background: #1d2128; } }
