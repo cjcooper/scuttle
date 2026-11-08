@@ -939,6 +939,19 @@ listen("status", () => {
   else call("login_item_get", undefined, { quiet: true }).then(renderLoginItem).catch(() => {});
 });
 
+// ------------------------------------------------------- pinned toolbars
+
+// List toolbars stick right under the page header, whose height varies
+// (tabs, wrapped buttons): keep --header-h equal to the visible header's.
+const headerObserver = new ResizeObserver((entries) => {
+  for (const e of entries) {
+    if (e.target.offsetParent) {
+      document.documentElement.style.setProperty("--header-h", `${e.target.offsetHeight}px`);
+    }
+  }
+});
+document.querySelectorAll(".view > header").forEach((h) => headerObserver.observe(h));
+
 // -------------------------------------------------------------------- boot
 
 listen("status", (e) => {
