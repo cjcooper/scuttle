@@ -9,6 +9,7 @@ mod error;
 mod history;
 mod login;
 mod menu;
+mod migrate;
 mod process;
 mod runtime;
 mod shell;
@@ -97,6 +98,10 @@ pub fn run() {
             shell::shell_pop_out,
         ])
         .setup(|app| {
+            // Carry settings and history over from "Container Desktop".
+            if let Ok(dir) = app.path().app_config_dir() {
+                migrate::config(&dir);
+            }
             let settings = app
                 .path()
                 .app_config_dir()

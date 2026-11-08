@@ -180,7 +180,7 @@ pub async fn stream(mut cmd: Command, sink: LineSink) -> Result<()> {
 /// would retarget the engine are skipped; the app chooses the engine itself.
 #[cfg(unix)]
 pub fn inherit_login_env() {
-    const MARK: &str = "__CONTAINER_DESKTOP_ENV__";
+    const MARK: &str = "__SCUTTLE_ENV__";
     const SKIP: &[&str] = &[
         "DOCKER_HOST",
         "DOCKER_CONTEXT",

@@ -5,7 +5,7 @@
 //!
 //! On macOS the LaunchAgent names the app's bundle identifier in
 //! `AssociatedBundleIdentifiers`, so System Settings › Login Items lists it
-//! as "Container Desktop" with its icon rather than by the signing
+//! as "Scuttle" with its icon rather than by the signing
 //! certificate's name.
 
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
@@ -25,9 +25,14 @@ pub struct Launcher(AutoLaunch);
 
 impl Launcher {
     pub fn new(app: &AppHandle) -> Result<Self> {
+        Self::named(app, &app.package_info().name)
+    }
+
+    /// A login item registered under `name` (for this app or its old name).
+    fn named(app: &AppHandle, name: &str) -> Result<Self> {
         let exe = std::env::current_exe()?;
         let mut b = AutoLaunchBuilder::new();
-        b.set_app_name(&app.package_info().name).set_args(&[ARG]);
+        b.set_app_name(name).set_args(&[ARG]);
         #[cfg(target_os = "macos")]
         {
             b.set_macos_launch_mode(auto_launch::MacOSLaunchMode::LaunchAgent)
@@ -72,7 +77,15 @@ pub fn refresh(app: &AppHandle) {
         return;
     }
     let launcher = app.state::<Launcher>();
-    if launcher.is_enabled() {
+    // The app used to be "Container Desktop": replace its login item.
+    let mut enable = launcher.is_enabled();
+    if let Ok(old) = Launcher::named(app, crate::migrate::OLD_NAME) {
+        if old.is_enabled() {
+            let _ = old.set(false);
+            enable = true;
+        }
+    }
+    if enable {
         let _ = launcher.set(true);
     }
 }
@@ -159,20 +172,18 @@ mod tests {
             "set HOME to a scratch directory"
         );
         let mut b = auto_launch::AutoLaunchBuilder::new();
-        b.set_app_name("Container Desktop")
+        b.set_app_name("Scuttle")
             .set_args(&[super::ARG])
             .set_macos_launch_mode(auto_launch::MacOSLaunchMode::LaunchAgent)
-            .set_bundle_identifiers(&["com.it-problems.container-desktop"])
-            .set_app_path("/Applications/Container Desktop.app/Contents/MacOS/container-desktop");
+            .set_bundle_identifiers(&["com.it-problems.scuttle"])
+            .set_app_path("/Applications/Scuttle.app/Contents/MacOS/scuttle");
         let launcher = super::Launcher(b.build().unwrap());
         launcher.set(true).unwrap();
         assert!(launcher.is_enabled());
-        let plist = std::fs::read_to_string(format!(
-            "{home}/Library/LaunchAgents/Container Desktop.plist"
-        ))
-        .unwrap();
+        let plist =
+            std::fs::read_to_string(format!("{home}/Library/LaunchAgents/Scuttle.plist")).unwrap();
         println!("{plist}");
-        assert!(plist.contains("<array><string>com.it-problems.container-desktop</string></array>"));
+        assert!(plist.contains("<array><string>com.it-problems.scuttle</string></array>"));
         launcher.set(false).unwrap();
         assert!(!launcher.is_enabled());
     }

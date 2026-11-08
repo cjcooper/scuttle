@@ -60,7 +60,7 @@ pub fn init(app: &AppHandle) -> tauri::Result<()> {
     TrayIconBuilder::with_id(TRAY_ID)
         .icon(Image::from_bytes(Indicator::Error.png())?)
         .icon_as_template(true)
-        .tooltip("Container Desktop")
+        .tooltip("Scuttle")
         .menu(&menu)
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| handle_menu(app, event.id.as_ref()))
@@ -240,9 +240,9 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
                 crate::login::status(app).enabled,
                 None::<&str>,
             )?,
-            &item("about", "About Container Desktop", true)?,
+            &item("about", "About Scuttle", true)?,
             &sep()?,
-            &PredefinedMenuItem::quit(app, Some("Quit Container Desktop"))?,
+            &PredefinedMenuItem::quit(app, Some("Quit Scuttle"))?,
         ],
     )?;
     *tray_state.items.lock().unwrap() = Some(items);
