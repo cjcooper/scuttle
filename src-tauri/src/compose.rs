@@ -318,6 +318,11 @@ pub async fn shutdown(app: &AppHandle) {
 
 // ---------------------------------------------------------------- commands
 
+fn spawn_tray_refresh(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move { crate::tray::refresh_stacks(&app).await });
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StackView {
@@ -361,6 +366,7 @@ pub fn compose_save(app: AppHandle, mut stack: Stack) -> Result<Vec<StackView>> 
             None => s.compose_stacks.push(stack),
         }
     })?;
+    spawn_tray_refresh(&app);
     Ok(compose_list(app))
 }
 
@@ -368,6 +374,7 @@ pub fn compose_save(app: AppHandle, mut stack: Stack) -> Result<Vec<StackView>> 
 pub fn compose_delete(app: AppHandle, id: String) -> Result<Vec<StackView>> {
     app.state::<AppState>()
         .update_settings(|s| s.compose_stacks.retain(|x| x.id != id))?;
+    spawn_tray_refresh(&app);
     Ok(compose_list(app))
 }
 
@@ -385,7 +392,14 @@ pub async fn compose_action(
     action: String,
     task_id: String,
 ) -> Result<()> {
-    let stack = find(&app, &id)?;
+    run_action(&app, &id, &action, &task_id).await
+}
+
+/// `up` (detached), `stop`, `down`, `restart` or `pull` for stack `id`.
+pub async fn run_action(app: &AppHandle, id: &str, action: &str, task_id: &str) -> Result<()> {
+    let app = app.clone();
+    let stack = find(&app, id)?;
+    let action = action.to_string();
     let args = match action.as_str() {
         "up" => stack.up_args(),
         "stop" => stack.args(&["stop"]),
@@ -394,7 +408,7 @@ pub async fn compose_action(
         "pull" => stack.args(&["pull"]),
         other => return Err(AppError::msg(format!("unknown compose action `{other}`"))),
     };
-    let sink = log_sink(&app, &task_id);
+    let sink = log_sink(&app, task_id);
     let result = run(&app, &stack, args, sink.clone()).await;
     if let Err(e) = &result {
         sink(&format!("[{}] {action} failed: {e}", stack.name));
@@ -407,7 +421,13 @@ pub async fn compose_action(
         crate::history::record(&app, entry);
     }
     let _ = tauri::Emitter::emit(&app, "compose", ());
+    crate::tray::refresh_stacks(&app).await;
     result
+}
+
+/// Follow stack `id`'s logs in a terminal window.
+pub fn open_logs(app: &AppHandle, id: &str) -> Result<()> {
+    compose_logs(app.clone(), id.to_string())
 }
 
 /// Follow the stack's logs in a terminal window.

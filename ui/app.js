@@ -922,6 +922,8 @@ listen("task-log", (e) => {
 });
 
 listen("preferences", (e) => { prefs = e.payload; });
+// The menu bar can ask the dashboard to show a page (e.g. Compose).
+listen("navigate", (e) => showView(e.payload));
 
 (async () => {
   await loadSettings();

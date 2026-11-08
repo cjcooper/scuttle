@@ -11,6 +11,7 @@ macOS + Colima is the first target. The design also supports other Docker Deskto
   - **Open Shell ▸** any running container
   - **Shell User ▸** Image Default / root / My User (uid:gid) / your custom user
   - **Run Preset ▸** your saved `docker run` presets
+  - **Compose ▸** each registered stack with its status (● running, ◐ partly running, ○ stopped), and **Up / Stop / Restart / Down… / Logs**
   - Remove Dangling Images, Prune Build Cache, and Open Dashboard
 - **Runtime**: pick a provider and profile, start, stop and restart it, and inspect every profile's CPU, memory and disk
 - **Images ▸ Local**: pull; list, filter and multi-select remove; remove dangling or all unused images; prune the build cache; view disk usage. Each image has **Shell**, which runs `docker run -it --rm --user <shell user> --entrypoint <shell> IMAGE` in your terminal, and **Run…**, which prefills the Run form.

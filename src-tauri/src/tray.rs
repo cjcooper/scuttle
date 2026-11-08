@@ -30,12 +30,24 @@ struct TrayItems {
     prune_cache: MenuItem<Wry>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+struct StackSummary {
+    id: String,
+    name: String,
+    running: usize,
+    total: usize,
+    /// Status unknown (engine down or compose failed).
+    unknown: bool,
+}
+
 #[derive(Default)]
 struct TrayState {
     items: Mutex<Option<TrayItems>>,
     /// (id, name) of running containers shown in the "Open Shell" submenu.
     containers: Mutex<Vec<(String, String)>>,
     last_status: Mutex<Option<Status>>,
+    /// Compose stacks for the "Compose" submenu: (id, name, running, total).
+    stacks: Mutex<Vec<StackSummary>>,
     /// The badge currently shown, so the icon is only replaced on change.
     indicator: Mutex<Option<Indicator>>,
     /// Whether the busy animation task is running.
@@ -158,6 +170,49 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
     };
     let preset_menu = Submenu::with_items(app, "Run Preset", true, &as_refs(&preset_items))?;
 
+    // Compose ▸ <stack> ▸ Up / Stop / Restart / Down… / Logs
+    let summaries = tray_state.stacks.lock().unwrap().clone();
+    let compose_menu = Submenu::with_id(app, "compose-menu", "Compose", true)?;
+    if summaries.is_empty() {
+        compose_menu.append(&item(
+            "none",
+            "No stacks — add one on the Compose page",
+            false,
+        )?)?;
+    }
+    for s in &summaries {
+        let (mark, detail) = match (s.unknown, s.running, s.total) {
+            (true, _, _) => ("○", "".to_string()),
+            (_, _, 0) => ("○", " — not created".to_string()),
+            (_, r, t) if r == t => ("●", format!(" — running ({t})")),
+            (_, 0, _) => ("○", " — stopped".to_string()),
+            (_, r, t) => ("◐", format!(" — {r}/{t} running")),
+        };
+        let all_up = !s.unknown && s.total > 0 && s.running == s.total;
+        let any_up = !s.unknown && s.running > 0;
+        let id = &s.id;
+        let sub = Submenu::with_items(
+            app,
+            format!("{mark} {}{detail}", s.name),
+            true,
+            &[
+                &item(&format!("compose:up:{id}"), "Up", !all_up)?,
+                &item(&format!("compose:stop:{id}"), "Stop", any_up)?,
+                &item(&format!("compose:restart:{id}"), "Restart", any_up)?,
+                &item(
+                    &format!("compose:down:{id}"),
+                    "Down…",
+                    !s.unknown && s.total > 0,
+                )?,
+                &sep()?,
+                &item(&format!("compose:logs:{id}"), "Logs", !s.unknown)?,
+            ],
+        )?;
+        compose_menu.append(&sub)?;
+    }
+    compose_menu.append(&sep()?)?;
+    compose_menu.append(&item("compose-open", "Open Compose…", true)?)?;
+
     let menu = Menu::with_items(
         app,
         &[
@@ -171,6 +226,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
             &shell_menu,
             &user_menu,
             &preset_menu,
+            &compose_menu,
             &sep()?,
             &items.prune_dangling,
             &items.prune_cache,
@@ -212,6 +268,15 @@ fn handle_menu(app: &AppHandle, id: &str) {
     }
     if id == "about" {
         let _ = crate::about::open(app);
+        return;
+    }
+    if id == "compose-open" {
+        crate::show_dashboard(app);
+        let _ = tauri::Emitter::emit(app, "navigate", "compose");
+        return;
+    }
+    if let Some(rest) = id.strip_prefix("compose:") {
+        compose_menu_action(app, rest);
         return;
     }
     if let Some(user) = id.strip_prefix("user:") {
@@ -434,7 +499,101 @@ pub fn spawn_status_poller(app: AppHandle) {
                 .map(|s| s.engine_version.is_some())
                 .unwrap_or(false);
             refresh_containers(&app, up).await;
+            refresh_stacks(&app).await;
             tokio::time::sleep(POLL_INTERVAL).await;
         }
     });
+}
+
+/// `compose:<action>:<stack id>` from the Compose submenu.
+fn compose_menu_action(app: &AppHandle, rest: &str) {
+    let Some((action, id)) = rest.split_once(':') else {
+        return;
+    };
+    let (action, id) = (action.to_string(), id.to_string());
+    if action == "logs" {
+        if let Err(e) = crate::compose::open_logs(app, &id) {
+            commands::log_sink(app, TRAY_TASK)(&e.to_string());
+        }
+        return;
+    }
+    let run = {
+        let app = app.clone();
+        let (action, id) = (action.clone(), id.clone());
+        move || {
+            tauri::async_runtime::spawn(async move {
+                if let Err(e) = crate::compose::run_action(&app, &id, &action, TRAY_TASK).await {
+                    commands::log_sink(&app, TRAY_TASK)(&format!("compose {action}: {e}"));
+                }
+            });
+        }
+    };
+    if action != "down" {
+        run();
+        return;
+    }
+    // Down removes containers and networks: confirm, as the dashboard does.
+    use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+    let name = app
+        .state::<TrayState>()
+        .stacks
+        .lock()
+        .unwrap()
+        .iter()
+        .find(|s| s.id == id)
+        .map(|s| s.name.clone())
+        .unwrap_or_else(|| "this stack".into());
+    app.dialog()
+        .message(format!(
+            "Take down “{name}”? Its containers and networks are removed (volumes are kept)."
+        ))
+        .title("Compose down")
+        .kind(MessageDialogKind::Warning)
+        .buttons(MessageDialogButtons::OkCancelCustom(
+            "Down".into(),
+            "Cancel".into(),
+        ))
+        .show(move |ok| {
+            if ok {
+                run();
+            }
+        });
+}
+
+/// Refresh the Compose submenu's stack statuses; rebuilds the menu only
+/// when something changed.
+pub async fn refresh_stacks(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    let stacks = state.settings().compose_stacks;
+    let engine_up = matches!(
+        app.state::<TrayState>().last_status.lock().unwrap().as_ref(),
+        Some(s) if s.engine_version.is_some()
+    );
+    let mut summaries = Vec::with_capacity(stacks.len());
+    for stack in &stacks {
+        let services = if engine_up {
+            crate::compose::services(app, stack).await.ok()
+        } else {
+            None
+        };
+        summaries.push(StackSummary {
+            id: stack.id.clone(),
+            name: stack.name.clone(),
+            running: services
+                .as_ref()
+                .map_or(0, |s| s.iter().filter(|s| s.state == "running").count()),
+            total: services.as_ref().map_or(0, Vec::len),
+            unknown: services.is_none(),
+        });
+    }
+    let changed = {
+        let ts = app.state::<TrayState>();
+        let mut cur = ts.stacks.lock().unwrap();
+        let changed = *cur != summaries;
+        *cur = summaries;
+        changed
+    };
+    if changed {
+        rebuild(app);
+    }
 }
