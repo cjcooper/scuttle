@@ -400,3 +400,101 @@ $("#cfg-delete").onclick = async () => {
 listen("status", () => {
   if ($("#view-colima").classList.contains("active")) renderActions();
 });
+
+// -------------------------------------------------------------------- data
+
+function fmtBytes(n) {
+  if (n == null) return "—";
+  if (n === 0) return "0";
+  return bytes(n);
+}
+
+async function loadData() {
+  const body = $("#data-body");
+  body.replaceChildren(el("tr", {}, el("td", { colSpan: 5, className: "empty" }, "Calculating…")));
+  let usage;
+  try {
+    usage = await call("colima_data_usage", undefined, { quiet: true });
+  } catch (e) {
+    body.replaceChildren(el("tr", {}, el("td", { colSpan: 5, className: "empty" }, String(e))));
+    return;
+  }
+  body.replaceChildren(
+    ...(usage.profiles.length
+      ? usage.profiles.map((p) => {
+          const del = el("button", { className: "small danger" }, "Delete with data");
+          del.onclick = async () => {
+            if (!(await confirmAction(
+              `Delete the Colima profile “${p.name}” together with its images, containers and volumes? This can't be undone.`,
+              "Delete profile and data"))) return;
+            del.disabled = true;
+            $("#activity").open = true;
+            try {
+              await call("colima_delete", { profile: p.name, deleteData: true, taskId: newTask("colima") });
+              toast(`Deleted ${p.name} and its data`);
+            } finally {
+              afterDelete();
+            }
+          };
+          return el("tr", {},
+            el("td", {}, p.name),
+            el("td", {}, el("span", { className: `badge ${p.state}` }, p.state)),
+            el("td", {}, fmtBytes(p.vmBytes)),
+            el("td", {}, fmtBytes(p.dataBytes)),
+            el("td", { className: "actions" }, del));
+        })
+      : [el("tr", {}, el("td", { colSpan: 5, className: "empty" }, "No Colima profiles"))])
+  );
+  $("#cache-info").textContent = usage.cachePath
+    ? `${fmtBytes(usage.cacheBytes)} in ${usage.cachePath}`
+    : "No cache directory found.";
+}
+
+async function afterDelete() {
+  cfgProfile = null;
+  await loadColimaProfiles();
+  await loadConfig();
+  await loadData();
+  loadProfiles();
+}
+
+$("#data-refresh").onclick = loadData;
+
+$("#cache-clear").onclick = async () => {
+  if (!(await confirmAction("Clear Colima's download cache?", "Clear cache"))) return;
+  $("#activity").open = true;
+  try {
+    await call("colima_prune", { taskId: newTask("colima") });
+    toast("Download cache cleared");
+  } finally {
+    loadData();
+  }
+};
+
+$("#nuke-confirm").addEventListener("input", (e) => {
+  $("#nuke").disabled = e.target.value.trim() !== "DELETE ALL";
+});
+
+$("#nuke").onclick = async () => {
+  const names = cfgProfiles.map((p) => p.name).join(", ") || "(none)";
+  if (!(await confirmAction(`Delete ALL Colima profiles and their data?\n\n${names}`, "Delete everything"))) return;
+  $("#nuke").disabled = true;
+  $("#nuke-confirm").value = "";
+  $("#activity").open = true;
+  try {
+    await call("colima_delete_all", { clearCache: $("#nuke-cache").checked, taskId: newTask("colima") });
+    toast("All Colima data deleted");
+  } finally {
+    afterDelete();
+  }
+};
+
+// The Data tab has no Save bar; it loads when opened.
+document.querySelectorAll('[data-group="colima"] .tab').forEach((t) =>
+  t.addEventListener("click", () => {
+    const data = t.dataset.tab === "colima-data";
+    $("#cfg-actions").hidden = data;
+    $("#cfg-profile").disabled = data;
+    if (data) loadData();
+  })
+);

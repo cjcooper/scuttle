@@ -613,3 +613,121 @@ pub async fn host_info() -> HostInfo {
     };
     HostInfo { cpus, memory }
 }
+
+// ------------------------------------------------------------- colima data
+
+/// Disk space actually used under `path` (sparse VM disks count as used
+/// blocks, not their nominal size).
+async fn disk_used(path: &std::path::Path) -> Option<u64> {
+    if !path.exists() {
+        return Some(0);
+    }
+    let mut c = tokio::process::Command::new("du");
+    c.arg("-sk").arg(path);
+    let out = crate::process::output(c, std::time::Duration::from_secs(60))
+        .await
+        .ok()?;
+    out.split_whitespace()
+        .next()?
+        .parse::<u64>()
+        .ok()
+        .map(|kb| kb * 1024)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProfileUsage {
+    name: String,
+    state: crate::runtime::VmState,
+    vm_bytes: Option<u64>,
+    data_bytes: Option<u64>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ColimaUsage {
+    profiles: Vec<ProfileUsage>,
+    cache_bytes: Option<u64>,
+    cache_path: Option<String>,
+}
+
+#[tauri::command]
+pub async fn colima_data_usage() -> Result<ColimaUsage> {
+    let mut profiles = Vec::new();
+    for p in crate::runtime::Colima.profiles().await? {
+        let (vm, data) = colima_config::profile_paths(&p.name)?;
+        profiles.push(ProfileUsage {
+            vm_bytes: disk_used(&vm).await,
+            data_bytes: disk_used(&data).await,
+            state: p.state,
+            name: p.name,
+        });
+    }
+    let cache = colima_config::cache_dir();
+    let cache_bytes = match &cache {
+        Some(c) => disk_used(c).await,
+        None => None,
+    };
+    Ok(ColimaUsage {
+        profiles,
+        cache_bytes,
+        cache_path: cache.map(|c| c.display().to_string()),
+    })
+}
+
+/// `colima delete --data` for every profile, then optionally `colima prune
+/// --all` to clear downloaded images.
+#[tauri::command]
+pub async fn colima_delete_all(app: AppHandle, clear_cache: bool, task_id: String) -> Result<()> {
+    let profiles = crate::runtime::Colima.profiles().await?;
+    let sink = log_sink(&app, &task_id);
+    sink(&format!(
+        "Deleting {} Colima profile(s) and their data: {}",
+        profiles.len(),
+        profiles
+            .iter()
+            .map(|p| p.name.as_str())
+            .collect::<Vec<_>>()
+            .join(", ")
+    ));
+    let mut failed = Vec::new();
+    for p in profiles {
+        let args = vec![
+            "delete".into(),
+            "--profile".into(),
+            p.name.clone(),
+            "--force".into(),
+            "--data".into(),
+        ];
+        if colima_lifecycle(&app, "Deleting", args, &task_id)
+            .await
+            .is_err()
+        {
+            failed.push(p.name);
+        }
+    }
+    if clear_cache {
+        let args = vec!["prune".into(), "--all".into(), "--force".into()];
+        if colima_lifecycle(&app, "Clearing cache", args, &task_id)
+            .await
+            .is_err()
+        {
+            failed.push("download cache".into());
+        }
+    }
+    if failed.is_empty() {
+        Ok(())
+    } else {
+        Err(crate::error::AppError::msg(format!(
+            "could not delete: {}",
+            failed.join(", ")
+        )))
+    }
+}
+
+/// `colima prune --all`: clear cached downloads (VM images).
+#[tauri::command]
+pub async fn colima_prune(app: AppHandle, task_id: String) -> Result<()> {
+    let args = vec!["prune".into(), "--all".into(), "--force".into()];
+    colima_lifecycle(&app, "Clearing cache", args, &task_id).await
+}

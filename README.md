@@ -6,7 +6,7 @@ macOS + Colima is the first target. The design also supports other Docker Deskto
 
 ## Features
 
-- **Menu bar icon** (macOS) or system tray icon (Windows/Linux) showing live runtime status, with:
+- **Menu bar icon** (macOS) or system tray icon (Windows/Linux). A status badge shows the runtime state: ● running, ○ stopped, half-filled while starting or stopping, ⊖ when the engine is unreachable. The menu has:
   - Start / Stop / Restart
   - **Open Shell ▸** any running container
   - **Shell User ▸** Image Default / root / My User (uid:gid) / your custom user
@@ -25,6 +25,10 @@ macOS + Colima is the first target. The design also supports other Docker Deskto
   - **Mounts**, VM **environment**, **Docker daemon.json**, **provision scripts**, and SSH and port-forwarder options.
   - Settings the form doesn't know about are kept when saving.
   - **New profile…** creates and starts a VM with the chosen settings. **Delete profile…** can optionally delete its container data too.
+  - **Data** tab:
+    - disk used by each profile's VM and container data, with **Delete with data** (`colima delete --data`);
+    - **Clear download cache** (`colima prune --all`);
+    - **Delete everything**: every profile and its data, behind a typed `DELETE ALL` confirmation.
 - **ECR images**: when a Pull or Run image is an ECR URL (`<account>.dkr.ecr.<region>.amazonaws.com/…`), an **AWS profile** picker appears, along with **Sign in (SSO)** (`aws sso login`).
   - Docker then runs with `AWS_PROFILE`. With `docker-credential-ecr-login` configured, that alone is enough; otherwise the app logs in with `aws ecr get-login-password | docker login`.
   - The last profile used is remembered per registry, and presets keep their profile.

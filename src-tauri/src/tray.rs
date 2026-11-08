@@ -304,9 +304,18 @@ fn animate_busy(app: &AppHandle) {
                 break;
             }
             frame = !frame;
-            set_indicator(&app, if frame { Indicator::BusyB } else { Indicator::BusyA });
+            set_indicator(
+                &app,
+                if frame {
+                    Indicator::BusyB
+                } else {
+                    Indicator::BusyA
+                },
+            );
         }
-        app.state::<TrayState>().animating.store(false, Ordering::SeqCst);
+        app.state::<TrayState>()
+            .animating
+            .store(false, Ordering::SeqCst);
         // Settle on the real state.
         let last = app.state::<TrayState>().last_status.lock().unwrap().clone();
         if let Some(s) = last.filter(|s| s.busy.is_none()) {

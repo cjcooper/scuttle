@@ -268,6 +268,7 @@
           <div class="tabs" data-group="colima">
             <button class="tab active" data-tab="colima-settings">Settings</button>
             <button class="tab" data-tab="colima-yaml">YAML</button>
+            <button class="tab" data-tab="colima-data">Data</button>
           </div>
         </div>
       </header>
@@ -289,6 +290,40 @@
         <div class="card">
           <p class="hint mono" id="cfg-path"></p>
           <textarea id="cfg-raw" class="yaml" spellcheck="false" rows="28"></textarea>
+        </div>
+      </div>
+
+      <div class="subview" id="colima-data">
+        <div class="card">
+          <div class="row">
+            <h2 class="grow">Disk usage</h2>
+            <button id="data-refresh" class="ghost small" title="Refresh">↻</button>
+          </div>
+          <table>
+            <thead><tr><th>Profile</th><th>State</th><th>VM</th><th>Container data</th><th></th></tr></thead>
+            <tbody id="data-body"></tbody>
+          </table>
+          <p class="hint">“Delete with data” runs <code>colima delete --data</code>: the VM and its images, containers and volumes are removed.</p>
+        </div>
+        <div class="card">
+          <h2>Download cache</h2>
+          <div class="row">
+            <p class="grow hint" id="cache-info">Calculating…</p>
+            <button id="cache-clear" class="secondary">Clear download cache</button>
+          </div>
+          <p class="hint">Runs <code>colima prune --all</code>. Cached VM images are downloaded again the next time a profile is created.</p>
+        </div>
+        <div class="card danger-zone">
+          <h2>Delete all Colima data</h2>
+          <p>Deletes <b>every</b> Colima profile with its VM and container data (<code>colima delete --data</code> for each). This can't be undone.</p>
+          <div class="row">
+            <label>Type <b>DELETE ALL</b> to confirm
+              <input id="nuke-confirm" autocomplete="off" spellcheck="false" />
+            </label>
+            <label class="check"><input type="checkbox" id="nuke-cache" checked /> Also clear the download cache</label>
+            <span class="grow"></span>
+            <button id="nuke" class="danger" disabled>Delete everything</button>
+          </div>
         </div>
       </div>
 

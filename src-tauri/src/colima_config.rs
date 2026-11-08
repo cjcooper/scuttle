@@ -519,3 +519,47 @@ mod roundtrip {
         println!("{}", after.raw);
     }
 }
+
+// ------------------------------------------------------------------ data
+
+/// Lima instance name for a Colima profile (`default` → `colima`).
+fn instance(profile: &str) -> String {
+    if profile == "default" {
+        "colima".into()
+    } else {
+        format!("colima-{profile}")
+    }
+}
+
+/// Where Colima keeps a profile's VM and its container-data disk.
+pub fn profile_paths(profile: &str) -> Result<(PathBuf, PathBuf)> {
+    valid_profile(profile)?;
+    let lima = colima_home()?.join("_lima");
+    Ok((
+        lima.join(instance(profile)),
+        lima.join("_disks").join(instance(profile)),
+    ))
+}
+
+/// Colima's download cache (`colima prune` clears it).
+pub fn cache_dir() -> Option<PathBuf> {
+    let home = PathBuf::from(std::env::var_os("HOME")?);
+    Some(if cfg!(target_os = "macos") {
+        home.join("Library/Caches/colima")
+    } else {
+        std::env::var_os("XDG_CACHE_HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| home.join(".cache"))
+            .join("colima")
+    })
+}
+
+#[cfg(test)]
+mod data_tests {
+    #[test]
+    fn instance_names() {
+        assert_eq!(super::instance("default"), "colima");
+        assert_eq!(super::instance("x64"), "colima-x64");
+        assert!(super::profile_paths("../x").is_err());
+    }
+}
