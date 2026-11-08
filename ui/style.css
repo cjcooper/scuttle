@@ -65,7 +65,7 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .dot.busy { background: var(--warn); animation: pulse 1s infinite alternate; }
 @keyframes pulse { to { opacity: .35; } }
 
-main { overflow: auto; padding: 20px 24px 64px; position: relative; }
+main { overflow: auto; padding: 0 24px 64px; position: relative; }
 .view { display: none; }
 .view.active { display: block; }
 header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -299,3 +299,30 @@ table.compose .stack-dir { display: block; font-size: 11px; color: var(--muted);
 table.compose tr.services td { background: var(--bg); padding: 4px 8px 10px 24px; }
 table.compose tr.services table td, table.compose tr.services table th { font-size: 12px; padding: 3px 6px; }
 .badge.partial { background: color-mix(in srgb, var(--warn) 25%, transparent); }
+
+/* ---- pinned headers and toolbars ----
+   Each page's header (title, tabs, commands) stays at the top while the page
+   scrolls; list toolbars stick just below it (--header-h is the active
+   header's height, kept current by app.js), and the Run form's actions stick
+   above the Activity bar. */
+.view > header {
+  position: sticky; top: 0; z-index: 20;
+  margin: 0 -24px 12px; padding: 16px 24px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap; gap: 8px;
+}
+.sticky-bar {
+  position: sticky; top: var(--header-h, 64px); z-index: 10;
+  margin: -14px -16px 8px; padding: 12px 16px 8px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  border-radius: 10px 10px 0 0;
+}
+.sticky-actions {
+  position: sticky; bottom: 40px; z-index: 10;
+  margin: 12px -16px -14px; padding: 10px 16px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 10px 10px;
+}

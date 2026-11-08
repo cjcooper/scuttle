@@ -28,7 +28,15 @@
   <main>
     <!-- Runtime -->
     <section class="view active" id="view-runtime">
-      <header><h1>Runtime</h1></header>
+      <header>
+        <h1>Runtime</h1>
+        <div class="toolbar">
+          <button id="vm-start">Start</button>
+          <button id="vm-stop" class="secondary">Stop</button>
+          <button id="vm-restart" class="secondary">Restart</button>
+          <button id="vm-delete-data" class="danger" hidden title="colima delete --data: remove this profile's VM and all its images, containers and volumes">Delete Data…</button>
+        </div>
+      </header>
       <div class="card">
         <div class="row">
           <label>Provider
@@ -44,12 +52,6 @@
       </div>
       <div class="card">
         <div class="status-grid" id="status-grid"></div>
-        <div class="row actions">
-          <button id="vm-start">Start</button>
-          <button id="vm-stop" class="secondary">Stop</button>
-          <button id="vm-restart" class="secondary">Restart</button>
-          <button id="vm-delete-data" class="danger" hidden title="colima delete --data: remove this profile's VM and all its images, containers and volumes">Delete Data…</button>
-        </div>
       </div>
       <div class="card">
         <h2>Startup</h2>
@@ -105,7 +107,7 @@
           </div>
         </div>
         <div class="card">
-          <div class="row">
+          <div class="row sticky-bar">
             <input type="search" class="grow" id="images-filter" placeholder="Filter images…" />
             <label class="check"><input type="checkbox" id="force-remove" /> Force</label>
             <button id="images-remove" class="danger" disabled>Remove selected</button>
@@ -172,7 +174,7 @@
 
       <div class="subview active" id="containers-list">
         <div class="card">
-          <div class="row">
+          <div class="row sticky-bar">
             <input type="search" class="grow" id="containers-filter" placeholder="Filter containers…" />
             <label class="check"><input type="checkbox" id="containers-running" checked /> Running only</label>
             <button id="containers-refresh" class="ghost" title="Refresh">↻</button>
@@ -252,7 +254,7 @@
             <label class="check"><input type="checkbox" id="run-rm" checked /> Remove when stopped (--rm)</label>
           </div>
           <pre class="log preview" id="run-preview"></pre>
-          <div class="row actions">
+          <div class="row actions sticky-actions">
             <input id="preset-name" placeholder="Preset name" />
             <button type="button" id="preset-save" class="secondary">Save preset</button>
             <span class="grow"></span>
@@ -368,7 +370,7 @@
         </div>
       </header>
       <div class="card">
-        <div class="row">
+        <div class="row sticky-bar">
           <input type="search" class="grow" id="history-filter" placeholder="Filter commands…" />
           <select id="history-kind">
             <option value="">All</option>

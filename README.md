@@ -14,7 +14,7 @@ macOS + Colima is the first target. The design also supports other Docker Deskto
   - **Compose ▸** each registered stack with its status (● running, ◐ partly running, ○ stopped), and **Up / Stop / Restart / Down… / Logs**
   - Remove Dangling Images, Prune Build Cache, and Open Dashboard
 - **Runtime**: pick a provider and profile, start, stop and restart it, and inspect every profile's CPU, memory and disk
-- **Images ▸ Local**: pull; list, filter and multi-select remove; remove dangling or all unused images; prune the build cache; view disk usage. Each image has **Shell**, which runs `docker run -it --rm --user <shell user> --entrypoint <shell> IMAGE` in your terminal, and **Run…**, which prefills the Run form.
+- **Images ▸ Local**: pull; list, filter and multi-select remove; remove dangling or all unused images; prune the build cache; view disk usage. Each image has **Delete** (removes that tag, or an untagged image by ID, after confirming; if a stopped container uses it, offers to force), **Shell**, which runs `docker run -it --rm --user <shell user> --entrypoint <shell> IMAGE` in your terminal, and **Run…**, which prefills the Run form.
 - **Images ▸ Build**: build context and Dockerfile pickers, tags, platform, target stage, build args, no-cache and pull options, with streamed BuildKit output
 - **Compose**: register Docker Compose stacks with these settings:
   - a directory, `-f` files in order, project name, profiles, env files and extra environment;

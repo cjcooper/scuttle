@@ -308,7 +308,49 @@ function imageActions(i) {
   const named = i.repository !== "<none>" && i.tag !== "<none>";
   const pull = el("button", { className: "small secondary", disabled: !named, title: named ? `Pull ${ref} again for the latest` : "Untagged image" }, "Pull");
   pull.onclick = async () => { pull.disabled = true; await pullImage(ref); pull.disabled = false; };
-  return [shell, run, pull];
+  const del = el("button", { className: "small danger", title: `docker image rm ${ref}` }, "Delete");
+  del.onclick = async () => { del.disabled = true; await deleteImage(i); del.disabled = false; };
+  return [shell, run, pull, del];
+}
+
+/**
+ * Delete one image row. Tagged rows are removed by `repo:tag`, so an image
+ * with other tags keeps them; untagged rows by ID. If a stopped container
+ * still uses it, offer to force the removal.
+ */
+async function deleteImage(i) {
+  const ref = imageRef(i);
+  const tagged = i.repository !== "<none>" && i.tag !== "<none>";
+  const target = tagged ? ref : i.id;
+  const label = tagged ? ref : `untagged image ${i.id.replace(/^sha256:/, "").slice(0, 12)}`;
+  if (!(await confirmAction(`Delete ${label} (${i.size})?`, "Delete image", "Delete"))) return;
+  const remove = async (force) => {
+    const out = await invoke("remove_images", { ids: [target], force });
+    out.split("\n").filter(Boolean).forEach(logActivity);
+    selectedImages.delete(i.id);
+    toast(`Deleted ${label}`);
+  };
+  try {
+    await remove(false);
+  } catch (e) {
+    const msg = String(e);
+    if (/cannot be forced|running container/i.test(msg)) {
+      // A running container blocks it even with --force.
+      toast(`${label} is used by a running container; stop or remove the container first.`, true);
+    } else if (!/conflict|being used|is using its referenced image|must force/i.test(msg)) {
+      toast(msg, true);
+    } else if (await confirmAction(
+      `${label} is used by a stopped container:\n\n${msg}\n\nForce the delete? The tag is removed; the container keeps working, and the image's space is freed once the container is removed.`,
+      "Image in use", "Force Delete")) {
+      try {
+        await remove(true);
+      } catch (e2) {
+        toast(String(e2), true);
+      }
+    }
+  } finally {
+    loadImages();
+  }
 }
 
 async function imageShell(ref) {
@@ -896,6 +938,19 @@ listen("status", () => {
   if (loginItem) renderLoginItem(loginItem);
   else call("login_item_get", undefined, { quiet: true }).then(renderLoginItem).catch(() => {});
 });
+
+// ------------------------------------------------------- pinned toolbars
+
+// List toolbars stick right under the page header, whose height varies
+// (tabs, wrapped buttons): keep --header-h equal to the visible header's.
+const headerObserver = new ResizeObserver((entries) => {
+  for (const e of entries) {
+    if (e.target.offsetParent) {
+      document.documentElement.style.setProperty("--header-h", `${e.target.offsetHeight}px`);
+    }
+  }
+});
+document.querySelectorAll(".view > header").forEach((h) => headerObserver.observe(h));
 
 // -------------------------------------------------------------------- boot
 
