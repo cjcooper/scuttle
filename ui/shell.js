@@ -8,6 +8,8 @@ const $ = (s) => document.querySelector(s);
 const label = new URLSearchParams(location.search).get("label");
 
 let generation = 0;
+/** Events received while (re)connecting, or null when connected. */
+let pending = [];
 let session = null;
 let options = { user: "", shell: "auto" };
 
@@ -101,13 +103,25 @@ $("#sso").onclick = async () => {
 async function connect(newOptions) {
   ended(null);
   term.reset();
+  // Ignore the old connection's output and exit while the new one starts:
+  // the backend kills it, and that exit must not close the window.
+  generation = -1;
+  pending = [];
+  if (newOptions) {
+    term.write(`\x1b[2mReconnecting as ${userLabel(newOptions.user)}…\x1b[0m\r\n`);
+  }
   try {
     session = await invoke("shell_start", { cols: term.cols, rows: term.rows, options: newOptions ?? null });
   } catch (e) {
+    pending = null;
     ended(String(e));
     return;
   }
   generation = session.generation;
+  // Replay what the new connection sent before we knew its generation.
+  const early = pending.filter((out) => out.generation === generation);
+  pending = null;
+  early.forEach(handleOutput);
   options = session.options;
   $("#shell-heading").textContent = `${session.title} — ${userLabel(options.user)}`;
   $("#shell-command").textContent = session.command;
@@ -132,22 +146,26 @@ $("#shell-select").onchange = (e) => connect({ ...options, shell: e.target.value
 $("#reconnect").onclick = () => connect(options);
 $("#pop-out").onclick = () => invoke("shell_pop_out").catch((e) => ended(String(e)));
 
+/** Output for the current connection. */
+function handleOutput(out) {
+  if (out.type === "data") {
+    term.write(decode(out.data));
+  } else if (out.type === "exited") {
+    if (out.clean) {
+      currentWindow.close();
+    } else {
+      term.write(`\r\n\x1b[2m[${out.message}]\x1b[0m\r\n`);
+      ended(`${out.message} Reconnect to start again.`);
+    }
+  }
+}
+
 // -------------------------------------------------------------------- boot
 
 (async () => {
   await listen(label, (e) => {
-    const out = e.payload;
-    if (out.generation !== generation) return; // from a replaced connection
-    if (out.type === "data") {
-      term.write(decode(out.data));
-    } else if (out.type === "exited") {
-      if (out.clean) {
-        currentWindow.close();
-      } else {
-        term.write(`\r\n\x1b[2m[${out.message}]\x1b[0m\r\n`);
-        ended(`${out.message} Reconnect to start again.`);
-      }
-    }
+    if (pending) pending.push(e.payload); // reconnecting: sort out once we know the generation
+    else if (e.payload.generation === generation) handleOutput(e.payload);
   });
   await connect();
 })();

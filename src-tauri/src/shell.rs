@@ -394,8 +394,22 @@ pub async fn start(
     let emitter = window.clone();
     let started = Instant::now();
     std::thread::spawn(move || {
+        // A connection replaced by a reconnect (user/shell change) is killed;
+        // its leftover output and exit must not reach the window, or the
+        // window would take the kill for the user leaving and close.
+        let current = || {
+            emitter
+                .state::<ShellSessions>()
+                .sessions
+                .lock()
+                .unwrap()
+                .get(emitter.label())
+                .is_some_and(|s| s.generation == generation)
+        };
         let emit = |out: ShellOutput| {
-            let _ = emitter.emit_to(emitter.label(), &event, out);
+            if current() {
+                let _ = emitter.emit_to(emitter.label(), &event, out);
+            }
         };
         let b64 = base64::engine::general_purpose::STANDARD;
         let mut buf = vec![0u8; 16 * 1024];
