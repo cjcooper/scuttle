@@ -143,11 +143,10 @@ One-time setup:
 
 Making the dmg drives Finder with AppleScript, so the first run asks to let your terminal control Finder. If it fails with "Not authorized to send Apple events to Finder", allow it in System Settings → Privacy & Security → Automation.
 
-If `cargo tauri build` fails with "Failed to create app Assets.car … Bad file descriptor", stale Xcode asset-catalog helpers are to blame. `tools/build-signed.sh` clears them before building; by hand:
+If `cargo tauri build` fails with "Failed to create app Assets.car … Bad file descriptor": Tauri runs `actool` with stdin closed, which makes it fail and leaves Xcode's `ibtoold` daemon broken, so later `actool` runs fail too. `tools/build-signed.sh` works around it with an `actool` wrapper that supplies `/dev/null` as stdin. For a plain build, use the wrapper the script leaves in `src-tauri/target/actool-shim` and restart the daemon:
 
 ```sh
-killall -9 ibtoold actool AssetCatalogSimulatorAgent IBAgent-macOS 2>/dev/null
-xcrun simctl shutdown all
+killall ibtoold; PATH="$PWD/src-tauri/target/actool-shim:$PATH" cargo tauri build
 ```
 
 Never commit the `.p8` key or the password (`*.p8` and `private_keys/` are git-ignored).
