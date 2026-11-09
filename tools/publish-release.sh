@@ -34,7 +34,7 @@ while (( $# )); do
   case "$1" in
     --dry-run) dry_run=1 ;;
     --clobber) clobber=1 ;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
   shift

@@ -160,6 +160,11 @@ if [[ "$bump" != none ]]; then
 fi
 
 # --- build ------------------------------------------------------------------
+# Stale asset-catalog helpers make actool fail on icons/AppIcon.icon with
+# "Bad file descriptor" (Failed to create app Assets.car). Start them fresh;
+# this also shuts down any running iOS simulators.
+killall -9 ibtoold actool AssetCatalogSimulatorAgent IBAgent-macOS 2>/dev/null || true
+xcrun simctl shutdown all 2>/dev/null || true
 # Remove old bundles so the globs below only see this build's output.
 rm -rf "$bundle_dir/macos" "$bundle_dir/dmg"
 cargo tauri build --bundles app,dmg ${args[@]+"${args[@]}"} # also updates Cargo.lock
