@@ -10,7 +10,9 @@
 #
 # Run on main, right after `tools/build-signed.sh` (which commits and tags
 # v<version> but doesn't push). Before uploading it checks that:
-#   - the branch is main, the tree is clean, and HEAD is tagged v<version>;
+#   - the branch is main, the tree is clean, v<version> is in its history,
+#     and nothing built into the app changed since (only tools/, README.md
+#     or .github/ may, so fixing these scripts after a build is fine);
 #   - the dmg is Scuttle_<version>_aarch64.dmg, is signed, notarized and
 #     stapled, and holds Scuttle.app at version <version> for arm64;
 #   - the .sha256 next to it matches the dmg.
@@ -58,15 +60,19 @@ branch="$(git symbolic-ref --short HEAD 2>/dev/null || true)"
 [[ -z "$(git status --porcelain)" ]] || die "working tree not clean"
 git rev-parse -q --verify "refs/tags/$tag" >/dev/null \
   || die "no tag $tag; run tools/build-signed.sh first"
-[[ "$(git rev-parse "$tag^{commit}")" == "$(git rev-parse HEAD)" ]] \
-  || die "$tag isn't HEAD; check out main at the release commit"
+tag_commit="$(git rev-parse "$tag^{commit}")"
+git merge-base --is-ancestor "$tag_commit" HEAD || die "$tag isn't in main's history"
+# The dmg was built at the tag; anything that goes into the app must be unchanged.
+changed="$(git diff --name-only "$tag_commit" HEAD -- . ':!tools' ':!README.md' ':!.github')"
+[[ -z "$changed" ]] || die "changed since $tag, so the dmg is stale; release a new version:
+$changed"
 git fetch -q origin main --tags
 git merge-base --is-ancestor origin/main HEAD \
   || die "origin/main has commits that local main doesn't; pull (and rebuild) first"
 # An annotated tag lists as "<tag obj> refs/tags/vX" plus "<commit> refs/tags/vX^{}".
 remote_tag="$(git ls-remote --tags origin \
   | awk -v t="refs/tags/$tag^{}" -v l="refs/tags/$tag" '$2 == t { p = $1 } $2 == l { r = $1 } END { print (p ? p : r) }')"
-if [[ -n "$remote_tag" && "$remote_tag" != "$(git rev-parse HEAD)" ]]; then
+if [[ -n "$remote_tag" && "$remote_tag" != "$tag_commit" ]]; then
   die "origin's $tag points at a different commit"
 fi
 
