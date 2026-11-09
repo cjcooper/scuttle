@@ -77,7 +77,7 @@ sha256="$(shasum -a 256 "$dmg" | cut -d' ' -f1)"
 [[ "$(cut -d' ' -f1 "$sha_file")" == "$sha256" ]] \
   || die "$name doesn't match its .sha256 (rebuilt or re-stapled since?)"
 
-echo "Checking $name…"
+echo "Checking ${name}…"
 codesign --verify --strict "$dmg"
 xcrun stapler validate -q "$dmg" || die "$name isn't notarized and stapled"
 spctl --assess --type open --context context:primary-signature "$dmg" \
