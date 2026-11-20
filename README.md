@@ -28,6 +28,12 @@ Scuttle was previously called **Container Desktop**. On first start it copies se
   Each stack offers **Up** (`up -d`), **Stop**, **Restart**, **Down**, a services list, and **Logs** (`compose logs -f` in a built-in terminal window).
   - **Start with app** brings a stack up once the engine is reachable, waiting for the provider if it is still starting, e.g. after a login launch.
   - **On quit** controls what happens to a running stack when the app quits: `stop` (default, like Ctrl-C on `up`), `down`, or leave running. This applies however the app quits: its Quit item, the Dock, or logging out. It is limited to 2 minutes.
+- **Resources**: live CPU, memory, network and disk I/O graphs for running containers, sampled with `docker stats` about every 3 seconds while the page is open. The last 15 minutes are kept; you can view the last 1, 5 or 15. There are three levels:
+  - **All containers**: totals against the VM's CPUs and memory, stacked by compose project (any project, registered or not) and standalone container, plus a table with sparklines.
+  - **A compose project**: stacked per-service CPU and memory, network and disk totals, every service container (stopped ones too), and Up / Stop / Restart / Logs when the stack is registered.
+  - **A container**: its own graphs including processes, a memory-limit line when one is set, and details from `docker inspect` (image, command, limits, restart policy, ports, networks, mounts, environment), with Shell, Restart / Stop / Start and **Logs**.
+
+  Reach it from the sidebar, from **Stats** on a running container (Containers), or from **Stats** on a stack (Compose).
 - **History**: every run, pull and shell the app starts, from the dashboard or the menu bar, with the exact docker command (including `AWS_PROFILE` for ECR).
   - Filter by text or kind; failed commands are marked.
   - **Run again**, **Edit** (opens it in the Run form), **Open shell**, **Pull**, **Copy** and remove.

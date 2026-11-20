@@ -8,6 +8,8 @@
   <script src="app.js" defer></script>
   <script src="colima.js" defer></script>
   <script src="compose.js" defer></script>
+  <script src="charts.js" defer></script>
+  <script src="resources.js" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -17,6 +19,7 @@
       <button class="nav" data-view="images">Images</button>
       <button class="nav" data-view="containers">Containers</button>
       <button class="nav" data-view="compose">Compose</button>
+      <button class="nav" data-view="resources">Resources</button>
       <button class="nav" data-view="history">History</button>
     </nav>
     <div class="status-pill" id="status-pill">
@@ -289,6 +292,36 @@
         </table>
         <p class="hint">Stacks marked <b>Start with app</b> come up once the engine is reachable (after the provider starts, too). When the app quits, running stacks are stopped or taken down per <b>On quit</b>.</p>
       </div>
+    </section>
+
+    <!-- Resources -->
+    <section class="view" id="view-resources">
+      <header>
+        <div class="res-heading">
+          <nav class="crumbs" id="res-crumbs" aria-label="Breadcrumb"></nav>
+          <h1 id="res-title">All containers</h1>
+        </div>
+        <div class="toolbar">
+          <span id="res-actions" class="toolbar"></span>
+          <select id="res-window" title="Time range">
+            <option value="60000">Last minute</option>
+            <option value="300000" selected>Last 5 minutes</option>
+            <option value="900000">Last 15 minutes</option>
+          </select>
+        </div>
+      </header>
+      <p class="hint res-note" id="res-note" hidden></p>
+      <div class="res-info" id="res-info"></div>
+      <div class="tiles" id="res-tiles"></div>
+      <div class="chart-grid" id="res-charts"></div>
+      <div class="card" id="res-table">
+        <table class="res-table">
+          <thead><tr><th>Name</th><th>State</th><th>CPU</th><th>Memory</th><th>Network</th><th>Disk I/O</th><th>PIDs</th><th></th></tr></thead>
+          <tbody id="res-body"></tbody>
+        </table>
+        <p class="hint" id="res-foot"></p>
+      </div>
+      <p class="hint">Sampled with <code>docker stats</code> about every 3 seconds while this page is open; up to 15 minutes are kept. CPU is in docker's units: 100% is one CPU fully busy.</p>
     </section>
 
     <!-- Compose stack editor (modal) -->

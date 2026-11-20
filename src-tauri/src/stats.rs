@@ -404,6 +404,20 @@ pub fn stats_poll(app: AppHandle, since: u64) -> StatsBatch {
     app.state::<Stats>().poll(&app, since)
 }
 
+/// Follow a container's logs in a terminal window.
+#[tauri::command]
+pub fn container_logs(app: AppHandle, id: String, name: Option<String>) -> Result<()> {
+    let target = crate::shell::ShellTarget::Command {
+        title: format!("{} logs", name.as_deref().unwrap_or(&id)),
+        args: ["container", "logs", "--follow", "--tail", "300", &id]
+            .map(String::from)
+            .to_vec(),
+        cwd: None,
+        env: Vec::new(),
+    };
+    crate::shell::open(&app, target, None)
+}
+
 /// `docker container inspect` for the detail view.
 #[tauri::command]
 pub async fn container_inspect(app: AppHandle, id: String) -> Result<serde_json::Value> {
@@ -468,6 +482,38 @@ mod tests {
         assert_eq!(now[0].net_rx, 2000.0);
         assert_eq!(now[1].net_rx, 0.0); // counter reset after restart
         assert_eq!(now[2].net_rx, 0.0); // no previous sample
+    }
+
+    /// Live check against the local engine: `cargo test -- --ignored live_stats --nocapture`.
+    #[test]
+    #[ignore]
+    fn live_stats() {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        rt.block_on(async {
+            use crate::runtime::Provider;
+            let p = crate::runtime::Colima;
+            let d = Docker::new(p.engine_target("default").await.unwrap());
+            let (s, m, i) = tokio::join!(stats(&d), members(&d), engine_info(&d));
+            let (s, m, i) = (s.unwrap(), m.unwrap(), i.unwrap());
+            println!("info: {i:?}");
+            for c in &s {
+                let mm = m.iter().find(|x| x.id == c.id);
+                println!(
+                    "{} cpu {:.2}% mem {} / {} pids {} -> {:?}",
+                    c.id,
+                    c.cpu,
+                    c.mem,
+                    c.mem_limit,
+                    c.pids,
+                    mm.map(|x| (&x.name, &x.project, &x.service))
+                );
+            }
+            assert!(i.0 > 0 && i.1 > 0);
+            assert!(s.iter().all(|c| m.iter().any(|x| x.id == c.id)));
+        });
     }
 
     #[test]

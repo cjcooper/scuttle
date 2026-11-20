@@ -66,6 +66,12 @@ function renderStacks(statuses = {}) {
     logs.onclick = () => call("compose_logs", { id: st.id });
     const edit = el("button", { className: "small ghost" }, "Edit");
     edit.onclick = () => openStackDialog(st);
+    // compose ps reports the project; otherwise compose's default (the directory name).
+    const project = (Array.isArray(services) && services.find((s) => s.project)?.project)
+      || st.projectName
+      || (st.directory.split(/[\\/]/).filter(Boolean).pop() ?? "").toLowerCase().replace(/[^a-z0-9_-]/g, "");
+    const stats = el("button", { className: "small ghost", title: "CPU, memory, network and disk graphs for this stack" }, "Stats");
+    stats.onclick = () => resGo({ kind: "group", project });
     const auto = el("input", { type: "checkbox", checked: st.autostart, title: "Start with this app" });
     auto.onchange = async () => {
       stacks = await call("compose_save", { stack: { ...stripView(st), autostart: auto.checked } });
@@ -86,7 +92,7 @@ function renderStacks(statuses = {}) {
         running ? btn("Stop", "stop") : btn("Up", "up", ""),
         ...(running ? [btn("Restart", "restart")] : []),
         btn("Down", "down", "ghost"),
-        logs, edit)));
+        logs, stats, edit)));
     if (open) rows.push(el("tr", { className: "services" }, el("td", { colSpan: 5 }, servicesTable(services))));
   }
   body.replaceChildren(...rows);

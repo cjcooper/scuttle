@@ -82,6 +82,7 @@ function showView(name) {
   if (name === "runtime") loadProfiles();
   if (name === "history") loadHistory();
   if (name === "compose") loadStacks();
+  resourcesShown(name === "resources");
 }
 
 // Sub-tabs inside a view (Images: Local/Build, Containers: Containers/Run).
@@ -598,6 +599,8 @@ async function loadContainers() {
         await call("open_shell", { container: c.names || c.id });
         toast(`Opening shell in ${c.names} as ${userLabel()}`);
       };
+      const stats = el("button", { className: "small ghost", title: "CPU, memory, network and disk graphs" }, "Stats");
+      stats.onclick = () => resGo({ kind: "container", id: c.id });
       return el("tr", {},
         el("td", {}, c.names),
         el("td", { className: "mono" }, c.image),
@@ -605,7 +608,7 @@ async function loadContainers() {
         el("td", {}, c.status),
         el("td", { className: "mono" }, c.ports),
         el("td", { className: "actions" },
-          ...(running ? [shell, btn("Stop", "stop"), btn("Restart", "restart")] : [btn("Start", "start")]),
+          ...(running ? [shell, stats, btn("Stop", "stop"), btn("Restart", "restart")] : [btn("Start", "start")]),
           btn("Remove", "remove", "danger")));
     })
   );

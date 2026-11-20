@@ -99,6 +99,7 @@ pub fn run() {
             shell::shell_pop_out,
             stats::stats_poll,
             stats::container_inspect,
+            stats::container_logs,
         ])
         .setup(|app| {
             // Carry settings and history over from "Container Desktop".
