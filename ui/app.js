@@ -103,16 +103,36 @@ function showTab(id) {
 
 // ------------------------------------------------------------------ status
 
+// Each provider's mark, with a dark-mode variant where the light one would
+// vanish against a dark background.
+const PROVIDER_ICONS = {
+  colima: ["providers/colima.png", "providers/colima-dark.png"],
+  "docker-context": ["providers/docker.svg"],
+  podman: ["providers/podman.svg", "providers/podman-dark.svg"],
+};
+function providerIcon(id) {
+  const [light, dark = light] = PROVIDER_ICONS[id] ?? [];
+  if (!light) return [];
+  return [el("img", { className: "light", src: light, alt: "" }), el("img", { className: "dark", src: dark, alt: "" })];
+}
+// Give a dropdown option its provider's icon (see select.js).
+function withIcon(option, id) {
+  const [light, dark] = PROVIDER_ICONS[id] ?? [];
+  if (light) option.dataset.icon = light;
+  if (dark) option.dataset.iconDark = dark;
+  return option;
+}
+
 function renderStatus(s) {
   status = s;
   const dot = $("#status-dot");
   dot.className = "dot " + (s.busy ? "busy" : s.vmState);
   const state = s.busy ? `${s.busy}…` : s.vmState[0].toUpperCase() + s.vmState.slice(1);
-  // Colima has its own mark; other providers show only their name.
-  $("#status-icon").hidden = s.providerId !== "colima";
-  $("#status-text").textContent = `${s.providerName} · ${s.profile}`;
-  $("#status-state").textContent = state;
-  $("#status-pill").title = `${s.providerName} · ${s.profile} · ${state} (open Runtime)`;
+  // Just the provider's mark and a state dot; the words are in the tooltip.
+  $("#status-icon").replaceChildren(...providerIcon(s.providerId));
+  const label = `${s.providerName} · ${s.profile} · ${state}`;
+  $("#status-pill").title = `${label} (open Runtime)`;
+  $("#status-pill").setAttribute("aria-label", label);
 
   const grid = $("#status-grid");
   grid.replaceChildren(
@@ -178,8 +198,11 @@ async function loadProviders() {
   const ps = $("#provider-select");
   ps.replaceChildren(
     ...providers.map((p) =>
-      el("option", { value: p.id, disabled: !p.installed, selected: p.id === sel.provider },
-        p.installed ? p.name : `${p.name} (not installed)`)
+      withIcon(
+        el("option", { value: p.id, disabled: !p.installed, selected: p.id === sel.provider },
+          p.installed ? p.name : `${p.name} (not installed)`),
+        p.id
+      )
     )
   );
   await loadProfiles(sel);

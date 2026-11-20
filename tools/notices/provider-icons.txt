@@ -1,0 +1,6 @@
+Docker and Podman marks (ui/providers/docker.svg, podman.svg, podman-dark.svg):
+glyphs from Simple Icons 13.21.0 (https://simpleicons.org), filled with each
+brand's color. Simple Icons releases its icon data under CC0 1.0 Universal
+(https://creativecommons.org/publicdomain/zero/1.0/). Docker and Podman are
+trademarks of their respective owners and are shown only to identify the
+provider.

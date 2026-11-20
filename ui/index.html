@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Scuttle</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="select.js" defer></script>
   <script src="app.js" defer></script>
   <script src="colima.js" defer></script>
   <script src="compose.js" defer></script>
@@ -17,14 +18,9 @@
   <div class="titlebar" data-tauri-drag-region>
     <div class="titlebar-side" data-tauri-drag-region></div>
     <div class="titlebar-main" data-tauri-drag-region>
-      <button class="engine-status" id="status-pill" title="Open Runtime">
-        <span class="provider-icon" id="status-icon" hidden>
-          <img class="light" src="colima.png" alt="" />
-          <img class="dark" src="colima-dark.png" alt="" />
-        </span>
-        <span id="status-text">Checking…</span>
+      <button class="engine-status" id="status-pill" title="Checking…" aria-label="Checking…">
+        <span class="provider-icon" id="status-icon"></span>
         <span class="dot" id="status-dot"></span>
-        <span id="status-state"></span>
       </button>
     </div>
   </div>
