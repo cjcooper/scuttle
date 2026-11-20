@@ -69,11 +69,10 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 }
 .engine-status {
   display: flex; align-items: center; gap: 7px;
-  padding: 3px 10px 3px 8px; border-radius: 7px; font-size: 12px;
+  padding: 3px 8px; border-radius: 7px; font-size: 12px;
   background: transparent; color: var(--text); border: 1px solid transparent;
 }
 .engine-status:hover { background: var(--panel); border-color: var(--border); }
-#status-text { color: var(--muted); }
 .provider-icon { display: inline-flex; }
 .provider-icon img { height: 20px; width: auto; }
 .provider-icon .dark { display: none; }
@@ -81,6 +80,46 @@ nav { display: flex; flex-direction: column; gap: 2px; }
   .provider-icon .light { display: none; }
   .provider-icon .dark { display: inline; }
 }
+
+/* ---- dropdowns (select.js) ----
+   Every <select> is drawn as this button + menu; the native element stays
+   hidden next to it. */
+.dd { position: relative; display: inline-flex; min-width: 160px; }
+.dd-native {
+  position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0;
+  opacity: 0; pointer-events: none;
+}
+.dd-button {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px 6px 9px; text-align: left;
+  background: var(--bg); color: var(--text); border: 1px solid var(--border);
+}
+.dd-button:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.dd-button:focus-visible, .dd.open .dd-button {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.dd-face { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.dd-chevron {
+  flex: none; width: 7px; height: 7px; margin: 0 2px 3px 0;
+  border: solid var(--muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
+}
+.dd.open .dd-chevron { transform: rotate(225deg); margin: 3px 2px 0 0; }
+.dd-icon { width: 16px; height: 16px; object-fit: contain; flex: none; }
+.dd-menu {
+  position: fixed; z-index: 1000; overflow-y: auto; padding: 4px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / .16), 0 1px 3px rgb(0 0 0 / .1);
+}
+.dd-item {
+  display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px 8px;
+  border-radius: 5px; white-space: nowrap; cursor: default; color: var(--text);
+}
+.dd-item.active { background: var(--accent); color: var(--accent-text); }
+.dd-item[aria-selected="true"]::after { content: "✓"; margin-left: auto; padding-left: 16px; }
+.dd-item[aria-disabled="true"] { color: var(--muted); opacity: .6; }
+.dd-item[aria-disabled="true"].active { background: none; color: var(--muted); }
+
 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
 .dot.running { background: var(--ok); }
 .dot.stopped { background: var(--danger); }
@@ -183,7 +222,7 @@ td.actions button { margin-left: 4px; }
 /* ---- sidebar shell prefs ---- */
 .shell-prefs { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 8px; background: var(--panel); border: 1px solid var(--border); }
 .shell-prefs h3 { margin: 0; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.shell-prefs select, .shell-prefs input { min-width: 0; width: 100%; }
+.shell-prefs .dd, .shell-prefs input { min-width: 0; width: 100%; }
 .segmented { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
 .segmented button { background: transparent; color: var(--text); border-radius: 0; border: 0; padding: 4px 0; font-size: 11px; }
 .segmented button + button { border-left: 1px solid var(--border); }
@@ -204,7 +243,9 @@ body.shell-app { display: flex; flex-direction: column; height: 100vh; grid-temp
 .shell-command { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .shell-tools { display: flex; align-items: center; gap: 6px; flex: none; }
 .shell-tools .segmented { width: 220px; }
-.shell-tools select, .shell-tools input { min-width: 0; width: 140px; padding: 3px 6px; }
+.shell-tools .dd, .shell-tools input { min-width: 0; width: 140px; padding: 3px 6px; }
+.shell-tools .dd { padding: 0; }
+.shell-tools .dd-button { padding: 3px 6px 3px 8px; }
 .shell-ended[hidden] { display: none; }
 .shell-ended { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 6px 12px; background: color-mix(in srgb, var(--danger) 15%, var(--panel)); font-size: 12px; }
 .shell-term { flex: 1; min-height: 0; padding: 6px 4px 6px 10px; }
@@ -263,14 +304,14 @@ body.about-app { display: flex; flex-direction: column; height: 100vh; grid-temp
 .cfg-field.check { flex-direction: row; align-items: flex-start; gap: 8px; }
 .cfg-field.check > div { display: flex; flex-direction: column; gap: 2px; }
 .cfg-field.check > div > span { color: var(--text); font-size: 13px; }
-.cfg-field input:disabled, .cfg-field select:disabled { opacity: .6; }
+.cfg-field input:disabled, .cfg-field .dd-button:disabled { opacity: .6; }
 .cfg-range { display: flex; align-items: center; gap: 8px; }
 .cfg-range input[type="range"] { flex: 1; min-width: 0; padding: 0; }
 .cfg-range input[type="number"] { width: 80px; min-width: 0; }
 .cfg-range .unit { color: var(--muted); font-size: 12px; width: 30px; }
 .cfg-list-row { display: grid; grid-template-columns: 2fr 2fr auto auto; gap: 8px; align-items: center; margin-bottom: 6px; }
 .cfg-list-row.provision { grid-template-columns: 140px 1fr auto; align-items: start; }
-.cfg-list-row input, .cfg-list-row select, .cfg-list-row textarea { min-width: 0; }
+.cfg-list-row input, .cfg-list-row .dd, .cfg-list-row textarea { min-width: 0; }
 textarea.yaml, .cfg-field textarea { font-family: ui-monospace, Menlo, monospace; font-size: 12px; width: 100%; }
 .cfg-actions {
   flex: none; margin: 0 16px 16px; display: flex; gap: 8px; align-items: center;
