@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Regenerates THIRD-PARTY-NOTICES.txt: the Rust crates from Cargo.lock (via
 # cargo-about, see src-tauri/about.toml) plus the vendored JavaScript in
-# ui/vendor. Run after changing dependencies.
+# ui/vendor and the artwork notices in tools/notices. Run after changing
+# dependencies.
 # Needs: cargo install cargo-about --features cli
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -15,6 +16,12 @@ for dir in ui/vendor/*/; do
     printf '================================================================================\n'
     printf 'Vendored JavaScript: %s\n\n' "$(basename "$dir")"
     cat "$dir/LICENSE"
+    printf '\n'
+done >>"$tmp"
+for f in tools/notices/*.txt; do
+    printf '================================================================================\n'
+    printf 'Artwork: %s\n\n' "$(basename "$f" .txt)"
+    cat "$f"
     printf '\n'
 done >>"$tmp"
 mv "$tmp" "$out"

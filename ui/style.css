@@ -33,6 +33,7 @@ html, body { height: 100%; margin: 0; }
 body {
   display: grid;
   grid-template-columns: 200px 1fr;
+  grid-template-rows: 40px minmax(0, 1fr);
   font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--bg);
   color: var(--text);
@@ -54,10 +55,31 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 }
 .nav:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .nav.active { background: var(--accent); color: var(--accent-text); }
-.status-pill {
-  margin-top: auto; display: flex; align-items: center; gap: 8px;
-  padding: 8px 10px; border-radius: 8px; background: var(--panel);
-  border: 1px solid var(--border); font-size: 12px;
+/* Title bar: the sidebar's color runs up under the traffic lights, and the
+   engine status sits at the right. Bare areas drag the window. */
+.titlebar {
+  grid-column: 1 / -1;
+  display: grid; grid-template-columns: 200px 1fr;
+  -webkit-user-select: none; user-select: none;
+}
+.titlebar-side { background: var(--sidebar); border-right: 1px solid var(--border); }
+.titlebar-main {
+  display: flex; align-items: center; justify-content: flex-end;
+  padding: 0 12px; background: var(--bg); border-bottom: 1px solid var(--border);
+}
+.engine-status {
+  display: flex; align-items: center; gap: 7px;
+  padding: 3px 10px 3px 8px; border-radius: 7px; font-size: 12px;
+  background: transparent; color: var(--text); border: 1px solid transparent;
+}
+.engine-status:hover { background: var(--panel); border-color: var(--border); }
+#status-text { color: var(--muted); }
+.provider-icon { display: inline-flex; }
+.provider-icon img { height: 20px; width: auto; }
+.provider-icon .dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  .provider-icon .light { display: none; }
+  .provider-icon .dark { display: inline; }
 }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
 .dot.running { background: var(--ok); }

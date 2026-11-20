@@ -12,6 +12,22 @@
   <script src="resources.js" defer></script>
 </head>
 <body>
+  <!-- The window's title bar (macOS overlays the traffic lights on its left);
+       dragging any bare part of it moves the window. -->
+  <div class="titlebar" data-tauri-drag-region>
+    <div class="titlebar-side" data-tauri-drag-region></div>
+    <div class="titlebar-main" data-tauri-drag-region>
+      <button class="engine-status" id="status-pill" title="Open Runtime">
+        <span class="provider-icon" id="status-icon" hidden>
+          <img class="light" src="colima.png" alt="" />
+          <img class="dark" src="colima-dark.png" alt="" />
+        </span>
+        <span id="status-text">Checking…</span>
+        <span class="dot" id="status-dot"></span>
+        <span id="status-state"></span>
+      </button>
+    </div>
+  </div>
   <aside class="sidebar">
     <div class="brand">Scuttle</div>
     <nav>
@@ -22,10 +38,6 @@
       <button class="nav" data-view="resources">Resources</button>
       <button class="nav" data-view="history">History</button>
     </nav>
-    <div class="status-pill" id="status-pill">
-      <span class="dot" id="status-dot"></span>
-      <span id="status-text">Checking…</span>
-    </div>
   </aside>
 
   <main>

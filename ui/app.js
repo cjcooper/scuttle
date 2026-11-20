@@ -74,6 +74,8 @@ document.querySelectorAll(".nav").forEach((b) =>
   b.addEventListener("click", () => showView(b.dataset.view))
 );
 
+$("#status-pill").addEventListener("click", () => showView("runtime"));
+
 function showView(name) {
   document.querySelectorAll(".nav").forEach((b) => b.classList.toggle("active", b.dataset.view === name));
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${name}`));
@@ -106,7 +108,11 @@ function renderStatus(s) {
   const dot = $("#status-dot");
   dot.className = "dot " + (s.busy ? "busy" : s.vmState);
   const state = s.busy ? `${s.busy}…` : s.vmState[0].toUpperCase() + s.vmState.slice(1);
-  $("#status-text").textContent = `${s.providerName} · ${s.profile} · ${state}`;
+  // Colima has its own mark; other providers show only their name.
+  $("#status-icon").hidden = s.providerId !== "colima";
+  $("#status-text").textContent = `${s.providerName} · ${s.profile}`;
+  $("#status-state").textContent = state;
+  $("#status-pill").title = `${s.providerName} · ${s.profile} · ${state} (open Runtime)`;
 
   const grid = $("#status-grid");
   grid.replaceChildren(
