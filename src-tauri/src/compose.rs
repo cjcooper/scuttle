@@ -205,6 +205,8 @@ pub struct Service {
     #[serde(default)]
     pub service: String,
     #[serde(default)]
+    pub project: String,
+    #[serde(default)]
     pub name: String,
     #[serde(default)]
     pub state: String,
@@ -485,10 +487,11 @@ mod tests {
 
     #[test]
     fn parses_ps_both_formats() {
-        let lines = "{\"Service\":\"db\",\"Name\":\"x-db-1\",\"State\":\"running\",\"Status\":\"Up 2 minutes\",\"Health\":\"\"}\n{\"Service\":\"redis\",\"State\":\"exited\"}";
+        let lines = "{\"Service\":\"db\",\"Project\":\"x\",\"Name\":\"x-db-1\",\"State\":\"running\",\"Status\":\"Up 2 minutes\",\"Health\":\"\"}\n{\"Service\":\"redis\",\"State\":\"exited\"}";
         let a = parse_ps(lines);
         assert_eq!(a.len(), 2);
         assert_eq!(a[0].state, "running");
+        assert_eq!(a[0].project, "x");
         let arr = "[{\"Service\":\"db\",\"State\":\"running\"}]";
         assert_eq!(parse_ps(arr).len(), 1);
         assert!(parse_ps("").is_empty());

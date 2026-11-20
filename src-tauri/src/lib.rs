@@ -14,6 +14,7 @@ mod process;
 mod runtime;
 mod shell;
 mod state;
+mod stats;
 mod terminal;
 mod tray;
 
@@ -96,6 +97,8 @@ pub fn run() {
             shell::shell_input,
             shell::shell_resize,
             shell::shell_pop_out,
+            stats::stats_poll,
+            stats::container_inspect,
         ])
         .setup(|app| {
             // Carry settings and history over from "Container Desktop".
@@ -109,6 +112,7 @@ pub fn run() {
                 .map(|d| d.join("settings.json"));
             app.manage(state::AppState::new(settings));
             app.manage(shell::ShellSessions::default());
+            app.manage(stats::Stats::default());
             app.manage(login::Launcher::new(app.handle())?);
             login::refresh(app.handle());
             app.manage(history::History::load(
