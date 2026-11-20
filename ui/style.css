@@ -28,11 +28,38 @@
   }
 }
 
+/* The OS accent (app.js sets --os-accent and --os-accent-text on <html>
+   from appearance.rs); without one the app keeps its own blue. */
+:root[data-accent] {
+  --accent: var(--os-accent);
+  --accent-text: var(--os-accent-text);
+}
+
+/* Nav icon tints: one hue per page, a lighter step in dark mode. */
+:root {
+  --nav-runtime: #2563eb;
+  --nav-images: #b45309;
+  --nav-containers: #0f766e;
+  --nav-compose: #7c3aed;
+  --nav-resources: #be123c;
+  --nav-history: #5b6576;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --nav-runtime: #6b9cf5;
+    --nav-images: #e3a24a;
+    --nav-containers: #3fbfae;
+    --nav-compose: #a78bfa;
+    --nav-resources: #f2708a;
+    --nav-history: #a0a8b6;
+  }
+}
+
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
 body {
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-width, 200px) minmax(0, 1fr);
   grid-template-rows: 28px minmax(0, 1fr);
   font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--bg);
@@ -65,12 +92,27 @@ main { -webkit-user-select: text; user-select: text; }
 .engine-status:hover { background: color-mix(in srgb, var(--text) 9%, transparent); }
 
 .sidebar {
+  position: relative;
   background: var(--sidebar);
   border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
   min-height: 0; overflow-y: auto;
 }
 .sidebar-head { padding: 12px 16px 8px; }
+/* Its right edge resizes it (app.js); a thin accent line shows on hover. */
+.sidebar-resizer {
+  position: fixed; top: 28px; bottom: 0; left: calc(var(--sidebar-width, 200px) - 4px);
+  width: 7px; z-index: 30; cursor: col-resize; touch-action: none;
+}
+.sidebar-resizer::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 3px; width: 1px;
+  background: transparent; transition: background .1s;
+}
+.sidebar-resizer:hover::after, .sidebar-resizer:focus-visible::after,
+.sidebar-resizer.dragging::after { background: var(--accent); }
+.sidebar-resizer:focus-visible { outline: none; }
+body.resizing { cursor: col-resize; }
+body.resizing main, body.resizing iframe { pointer-events: none; }
 .brand { font-weight: 700; letter-spacing: .02em; }
 nav { display: flex; flex-direction: column; gap: 1px; padding: 0 8px 12px; }
 .nav {
@@ -80,9 +122,15 @@ nav { display: flex; flex-direction: column; gap: 1px; padding: 0 8px 12px; }
   font-size: 14px; font-weight: 500; cursor: default;
 }
 .nav-icon {
-  width: 17px; height: 17px; flex: none; color: var(--accent);
+  width: 17px; height: 17px; flex: none; color: var(--nav-tint, var(--muted));
   fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
 }
+.nav[data-view="runtime"] { --nav-tint: var(--nav-runtime); }
+.nav[data-view="images"] { --nav-tint: var(--nav-images); }
+.nav[data-view="containers"] { --nav-tint: var(--nav-containers); }
+.nav[data-view="compose"] { --nav-tint: var(--nav-compose); }
+.nav[data-view="resources"] { --nav-tint: var(--nav-resources); }
+.nav[data-view="history"] { --nav-tint: var(--nav-history); }
 .nav:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
 .nav.active {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
@@ -211,7 +259,7 @@ td.actions button { margin-left: 4px; }
 #build-log { min-height: 160px; }
 
 .activity {
-  position: fixed; left: 200px; right: 0; bottom: 0;
+  position: fixed; left: var(--sidebar-width, 200px); right: 0; bottom: 0;
   background: var(--panel); border-top: 1px solid var(--border); padding: 6px 16px;
 }
 .activity summary { cursor: pointer; color: var(--muted); font-size: 12px; }

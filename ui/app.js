@@ -10,6 +10,82 @@ invoke("window_vibrancy").then(
   () => {}
 );
 
+// The OS accent colour (appearance.rs) in place of the app's own blue. Read
+// again on coming back to the app or a light/dark change, when the user may
+// have changed it in System Settings.
+function followAccent() {
+  const root = document.documentElement;
+  const apply = (a) => {
+    if (a) {
+      root.dataset.accent = "";
+      root.style.setProperty("--os-accent", a.color);
+      root.style.setProperty("--os-accent-text", a.text);
+    } else {
+      delete root.dataset.accent;
+      root.style.removeProperty("--os-accent");
+      root.style.removeProperty("--os-accent-text");
+    }
+  };
+  const refresh = () => invoke("system_accent").then(apply, () => apply(null));
+  refresh();
+  addEventListener("focus", refresh);
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", refresh);
+}
+followAccent();
+
+// The sidebar's width: drag its right edge (or focus it and use the arrow
+// keys); double-click puts it back. Remembered on this machine.
+function sidebarResizer() {
+  const KEY = "scuttle.sidebarWidth", DEFAULT = 200, MIN = 160, MAX = 360;
+  const root = document.documentElement, handle = document.getElementById("sidebar-resizer");
+  const clamp = (w) => Math.round(Math.min(MAX, Math.max(MIN, w)));
+  const set = (w, save = true) => {
+    w = clamp(w);
+    root.style.setProperty("--sidebar-width", `${w}px`);
+    handle.setAttribute("aria-valuenow", String(w));
+    if (save) try { localStorage.setItem(KEY, String(w)); } catch {}
+    return w;
+  };
+  let width = DEFAULT;
+  try { width = Number(localStorage.getItem(KEY)) || DEFAULT; } catch {}
+  width = set(width, false);
+  handle.setAttribute("aria-valuemin", String(MIN));
+  handle.setAttribute("aria-valuemax", String(MAX));
+
+  handle.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    const startX = e.clientX, start = width;
+    handle.classList.add("dragging");
+    document.body.classList.add("resizing");
+    let cur = start;
+    const move = (ev) => (cur = set(start + ev.clientX - startX, false));
+    const up = () => {
+      width = set(cur);
+      handle.classList.remove("dragging");
+      document.body.classList.remove("resizing");
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      handle.removeEventListener("pointercancel", up);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+    handle.addEventListener("pointercancel", up);
+  });
+  handle.addEventListener("dblclick", () => (width = set(DEFAULT)));
+  handle.addEventListener("keydown", (e) => {
+    const step = e.shiftKey ? 40 : 10;
+    if (e.key === "ArrowLeft") width = set(width - step);
+    else if (e.key === "ArrowRight") width = set(width + step);
+    else if (e.key === "Home") width = set(MIN);
+    else if (e.key === "End") width = set(MAX);
+    else return;
+    e.preventDefault();
+  });
+}
+sidebarResizer();
+
 const $ = (sel) => document.querySelector(sel);
 const el = (tag, props = {}, ...children) => {
   const n = Object.assign(document.createElement(tag), props);
