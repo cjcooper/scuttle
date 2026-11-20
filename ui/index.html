@@ -13,26 +13,24 @@
   <script src="resources.js" defer></script>
 </head>
 <body>
-  <!-- The window's title bar (macOS overlays the traffic lights on its left);
-       dragging any bare part of it moves the window. -->
+  <!-- The title bar: macOS draws the window controls over its left end, and
+       dragging any bare part of it moves the window. Over the sidebar
+       material (data-vibrancy) it is clear, as the sidebar is. -->
   <div class="titlebar" data-tauri-drag-region>
-    <div class="titlebar-side" data-tauri-drag-region></div>
-    <div class="titlebar-main" data-tauri-drag-region>
-      <button class="engine-status" id="status-pill" title="Checking…" aria-label="Checking…">
-        <span class="provider-icon" id="status-icon"></span>
-        <span class="dot" id="status-dot"></span>
-      </button>
-    </div>
+    <button class="engine-status" id="status-pill" title="Checking…" aria-label="Checking…">
+      <span class="provider-icon" id="status-icon"></span>
+      <span class="dot" id="status-dot"></span>
+    </button>
   </div>
   <aside class="sidebar">
-    <div class="brand">Scuttle</div>
+    <div class="sidebar-head"><span class="brand">Scuttle</span></div>
     <nav>
-      <button class="nav active" data-view="runtime">Runtime</button>
-      <button class="nav" data-view="images">Images</button>
-      <button class="nav" data-view="containers">Containers</button>
-      <button class="nav" data-view="compose">Compose</button>
-      <button class="nav" data-view="resources">Resources</button>
-      <button class="nav" data-view="history">History</button>
+      <button class="nav active" data-view="runtime"><svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.5"/><rect x="6" y="6" width="4" height="4" rx=".5"/><path d="M6 1.5v2M10 1.5v2M6 12.5v2M10 12.5v2M1.5 6h2M1.5 10h2M12.5 6h2M12.5 10h2"/></svg><span>Runtime</span></button>
+      <button class="nav" data-view="images"><svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.75 14.25 5 8 8.25 1.75 5z"/><path d="m1.75 8 6.25 3.25L14.25 8"/><path d="m1.75 11 6.25 3.25L14.25 11"/></svg><span>Images</span></button>
+      <button class="nav" data-view="containers"><svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.75 14 4.75v6.5L8 14.25 2 11.25v-6.5z"/><path d="M2 4.75 8 7.75l6-3M8 7.75v6.5"/></svg><span>Containers</span></button>
+      <button class="nav" data-view="compose"><svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.75" y="1.75" width="5.5" height="5.5" rx="1"/><rect x="8.75" y="1.75" width="5.5" height="5.5" rx="1"/><rect x="1.75" y="8.75" width="5.5" height="5.5" rx="1"/><rect x="8.75" y="8.75" width="5.5" height="5.5" rx="1"/></svg><span>Compose</span></button>
+      <button class="nav" data-view="resources"><svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 8.5h2.75l1.75-5 3 9.5 2-6.5 1 2.5h2.5"/></svg><span>Resources</span></button>
+      <button class="nav" data-view="history"><svg class="nav-icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.75"/></svg><span>History</span></button>
     </nav>
   </aside>
 

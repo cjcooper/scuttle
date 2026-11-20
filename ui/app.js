@@ -4,6 +4,12 @@ const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 const dialog = window.__TAURI__.dialog;
 
+// Over the OS sidebar material (window.rs), draw the sidebar and title bar clear.
+invoke("window_vibrancy").then(
+  (on) => on && document.documentElement.setAttribute("data-vibrancy", ""),
+  () => {}
+);
+
 const $ = (sel) => document.querySelector(sel);
 const el = (tag, props = {}, ...children) => {
   const n = Object.assign(document.createElement(tag), props);

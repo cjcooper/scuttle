@@ -10,14 +10,12 @@
     "windows": [
       {
         "label": "main",
+        "create": false,
         "title": "Scuttle",
         "width": 1100,
         "height": 720,
         "minWidth": 760,
         "minHeight": 480,
-        "titleBarStyle": "Overlay",
-        "hiddenTitle": true,
-        "trafficLightPosition": { "x": 16, "y": 13 },
         "visible": false
       }
     ],

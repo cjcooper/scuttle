@@ -17,6 +17,7 @@ mod state;
 mod stats;
 mod terminal;
 mod tray;
+mod window;
 
 use tauri::{AppHandle, Manager, RunEvent, WindowEvent};
 
@@ -100,6 +101,7 @@ pub fn run() {
             stats::stats_poll,
             stats::container_inspect,
             stats::container_logs,
+            window::window_vibrancy,
         ])
         .setup(|app| {
             // Carry settings and history over from "Container Desktop".
@@ -122,6 +124,9 @@ pub fn run() {
                     .ok()
                     .map(|d| d.join("history.json")),
             ));
+
+            // The dashboard window (created hidden; shown below or from the tray).
+            window::build_main(app)?;
 
             // Menu bar app with a Dock icon and full menu while a window is open.
             menu::install(app.handle())?;
