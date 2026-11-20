@@ -3094,6 +3094,7 @@ dependencies = [
  "async-trait",
  "auto-launch",
  "base64 0.22.1",
+ "objc2-app-kit",
  "portable-pty",
  "serde",
  "serde_json",

@@ -1,5 +1,6 @@
 mod about;
 mod app_icon;
+mod appearance;
 mod aws;
 mod colima_config;
 mod commands;
@@ -102,6 +103,7 @@ pub fn run() {
             stats::container_inspect,
             stats::container_logs,
             window::window_vibrancy,
+            appearance::system_accent,
         ])
         .setup(|app| {
             // Carry settings and history over from "Container Desktop".
