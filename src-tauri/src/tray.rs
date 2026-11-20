@@ -242,7 +242,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
             )?,
             &item("about", "About Scuttle", true)?,
             &sep()?,
-            &PredefinedMenuItem::quit(app, Some("Quit Scuttle"))?,
+            &item("quit", "Quit Scuttle", true)?,
         ],
     )?;
     *tray_state.items.lock().unwrap() = Some(items);
@@ -254,6 +254,10 @@ fn as_refs<T: IsMenuItem<Wry>>(v: &[T]) -> Vec<&dyn IsMenuItem<Wry>> {
 }
 
 fn handle_menu(app: &AppHandle, id: &str) {
+    if id == "quit" {
+        crate::quit(app);
+        return;
+    }
     if id == "open" {
         crate::show_dashboard(app);
         return;

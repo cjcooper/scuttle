@@ -282,9 +282,27 @@ pub fn spawn_autostart(app: &AppHandle) {
     });
 }
 
+/// Set once quitting has stopped the stacks (or found nothing to stop), so
+/// the final exit doesn't do it again.
+static SHUT_DOWN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn shut_down() -> bool {
+    SHUT_DOWN.load(std::sync::atomic::Ordering::SeqCst)
+}
+
+/// Exit without stopping stacks (Quit chosen again while they were stopping).
+pub fn skip_shutdown() {
+    SHUT_DOWN.store(true, std::sync::atomic::Ordering::SeqCst);
+}
+
 /// On app exit: stop or take down registered stacks that are running,
-/// according to each stack's `on_quit`. Bounded so quitting can't hang.
-pub async fn shutdown(app: &AppHandle) {
+/// according to each stack's `on_quit`, giving up after `limit`.
+///
+/// The engine is checked once, briefly, first: when it is stopped or on its
+/// way down (a Colima VM shutting down answers slowly or not at all) there
+/// is nothing to stop, and waiting on every stack's `ps` would only stall
+/// the quit.
+pub async fn shutdown(app: &AppHandle, limit: Duration) {
     let stacks: Vec<Stack> = app
         .state::<AppState>()
         .settings()
@@ -292,30 +310,40 @@ pub async fn shutdown(app: &AppHandle) {
         .into_iter()
         .filter(|s| s.on_quit != OnQuit::Leave)
         .collect();
-    if stacks.is_empty() {
-        return;
+    if !stacks.is_empty() {
+        let _ = tokio::time::timeout(limit, stop_stacks(app, &stacks)).await;
+    }
+    SHUT_DOWN.store(true, std::sync::atomic::Ordering::SeqCst);
+}
+
+async fn stop_stacks(app: &AppHandle, stacks: &[Stack]) {
+    let reachable = async {
+        let docker = app.state::<AppState>().docker().await?;
+        docker.server_version().await
+    };
+    match tokio::time::timeout(Duration::from_secs(8), reachable).await {
+        Ok(Ok(_)) => {}
+        _ => return,
     }
     let sink: LineSink = std::sync::Arc::new(|_: &str| {});
-    let work = async {
-        for stack in &stacks {
-            let running = services(app, stack)
-                .await
-                .map(|s| {
-                    s.iter()
-                        .any(|s| s.state == "running" || s.state == "restarting")
-                })
-                .unwrap_or(false);
-            if !running {
-                continue;
-            }
-            let sub = match stack.on_quit {
-                OnQuit::Down => "down",
-                _ => "stop",
-            };
-            let _ = run(app, stack, stack.args(&[sub]), sink.clone()).await;
+    for stack in stacks {
+        let running = tokio::time::timeout(Duration::from_secs(10), services(app, stack))
+            .await
+            .ok()
+            .and_then(|r| r.ok())
+            .is_some_and(|s| {
+                s.iter()
+                    .any(|s| s.state == "running" || s.state == "restarting")
+            });
+        if !running {
+            continue;
         }
-    };
-    let _ = tokio::time::timeout(Duration::from_secs(120), work).await;
+        let sub = match stack.on_quit {
+            OnQuit::Down => "down",
+            _ => "stop",
+        };
+        let _ = run(app, stack, stack.args(&[sub]), sink.clone()).await;
+    }
 }
 
 // ---------------------------------------------------------------- commands

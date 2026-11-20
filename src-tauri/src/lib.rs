@@ -20,6 +20,9 @@ mod terminal;
 mod tray;
 mod window;
 
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+
 use tauri::{AppHandle, Manager, RunEvent, WindowEvent};
 
 pub fn show_dashboard(app: &AppHandle) {
@@ -29,6 +32,32 @@ pub fn show_dashboard(app: &AppHandle) {
         let _ = w.unminimize();
         let _ = w.set_focus();
     }
+}
+
+fn hide_windows(app: &AppHandle) {
+    for w in app.webview_windows().values() {
+        let _ = w.hide();
+    }
+}
+
+/// The menu bar's Quit: put the windows away, stop compose stacks in the
+/// background (the app stays responsive, so a slow engine, such as a Colima
+/// VM that is shutting down, can't make it hang), then exit. Choosing Quit
+/// again while that runs exits at once.
+pub fn quit(app: &AppHandle) {
+    static QUITTING: AtomicBool = AtomicBool::new(false);
+    if QUITTING.swap(true, Ordering::SeqCst) {
+        compose::skip_shutdown();
+        app.exit(0);
+        return;
+    }
+    hide_windows(app);
+    menu::update_dock(app, None);
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        compose::shutdown(&app, Duration::from_secs(120)).await;
+        app.exit(0);
+    });
 }
 
 pub fn run() {
@@ -182,11 +211,13 @@ pub fn run() {
         } => api.prevent_exit(),
         // Every way of quitting ends here (the app's Quit, the Dock, logging
         // out). Stop or take down compose stacks before the process exits.
-        RunEvent::Exit => {
-            for w in app.webview_windows().values() {
-                let _ = w.hide();
-            }
-            tauri::async_runtime::block_on(compose::shutdown(app));
+        //
+        // The menu bar's Quit has already done this without blocking (see
+        // `quit`). Other routes (the Dock's Quit, logging out) arrive here
+        // directly, on the main thread, so the wait is kept short there.
+        RunEvent::Exit if !compose::shut_down() => {
+            hide_windows(app);
+            tauri::async_runtime::block_on(compose::shutdown(app, Duration::from_secs(20)));
         }
         _ => {}
     });
