@@ -25,6 +25,10 @@ Design: a container (an isometric box with corrugated sides) set in a control
 dial, the same family as Subduer's icon. The amber lid and the amber arc show
 the dial turned to "running". Light is a blue box on a white tile, dark a
 light-blue box on a charcoal tile; the palettes match Subduer's.
+
+For Christmas (CHRISTMAS below) the box is green with a gold lid, the arc red,
+a Santa hat sits on the box's top corner and snow falls on the tile, as in
+Subduer's holiday icon. Set CHRISTMAS = False and regenerate to take it out.
 """
 import json, math, os, sys
 C = 512
@@ -40,6 +44,18 @@ PALETTES = {
     "dark": dict(bg=("#2b3445", "#0d1119"), box="#6fa8ff", amber="#ffb21e", face="#141a25",
                  hexa=("#6fa8ff", 0.10), track=("#ffffff", 0.14), edge=0.0),
 }
+
+# Christmas: the same shapes in green, gold and red, plus snow and a hat.
+CHRISTMAS = True
+FESTIVE = {
+    "light": dict(PALETTES["light"], bg=("#ffffff", "#dbe8f0"), box="#17804a", amber="#e0a100",
+                  arc="#d62b33", hat="#d62b33", hexa=("#17804a", 0.08), track=("#17804a", 0.16),
+                  snow=("#9fbad6", 0.6)),
+    "dark": dict(PALETTES["dark"], bg=("#22344a", "#0b121c"), box="#4cc47e", amber="#ffc23d",
+                 arc="#ff4f58", hat="#ff4f58", hexa=("#4cc47e", 0.10), snow=("#ffffff", 0.55)),
+}
+if CHRISTMAS:
+    PALETTES = FESTIVE
 
 def pt(r, deg, cx=C, cy=C):
     a = math.radians(deg)
@@ -60,7 +76,7 @@ def dial(p):
     return [
         f'<g opacity="{ho}"><path d="{poly(hexa)}" fill="{hc}" stroke="{hc}" stroke-width="60" stroke-linejoin="round"/></g>',
         f'<path d="{arc(352, START, START+SWEEP)}" fill="none" stroke="{tc}" stroke-opacity="{to}" stroke-width="22" stroke-linecap="round"/>',
-        f'<path d="{arc(352, START, POINTER)}" fill="none" stroke="{p["amber"]}" stroke-width="22" stroke-linecap="round"/>',
+        f'<path d="{arc(352, START, POINTER)}" fill="none" stroke="{p.get("arc", p["amber"])}" stroke-width="22" stroke-linecap="round"/>',
     ]
 
 def box(p):
@@ -91,6 +107,32 @@ def box(p):
     parts.append(f'<path d="{poly(lid)}" fill="{p["amber"]}" stroke="{p["amber"]}" stroke-width="40" stroke-linejoin="round"/>')
     return parts
 
+def snow(p):
+    """Flakes scattered over the tile, the same every time (Subduer's)."""
+    if "snow" not in p:
+        return []
+    color, opacity = p["snow"]
+    flakes = [(188, 214, 9), (300, 160, 6), (842, 196, 8), (770, 140, 5), (166, 400, 6),
+              (868, 380, 7), (150, 600, 8), (880, 620, 6), (210, 820, 6), (820, 834, 9),
+              (402, 874, 5), (640, 880, 7), (520, 150, 5), (264, 300, 4), (760, 300, 4)]
+    return [f'<g fill="{color}" opacity="{opacity}">'
+            + "".join(f'<circle cx="{x}" cy="{y}" r="{r}"/>' for x, y, r in flakes) + "</g>"]
+
+def hat(p):
+    """A Santa hat on the box's top corner, its tip flopping over to the right."""
+    if "hat" not in p:
+        return []
+    x, y = C - 6, C + 14 - 222 + 6           # just over the lid's top corner (box())
+    return [f'<g transform="translate({x:.1f},{y:.1f}) rotate(-12) scale(0.78)">'
+            f'<path d="M-96,-6 C-84,-130 -20,-210 70,-214 C126,-216 168,-186 182,-128 '
+            f'C150,-160 108,-168 76,-150 C88,-104 96,-52 96,-6 Z" fill="{p["hat"]}"/>'
+            f'<path d="M-40,-30 C-30,-110 10,-170 64,-188" fill="none" stroke="#000" stroke-opacity="0.12" stroke-width="14" stroke-linecap="round"/>'
+            '<rect x="-122" y="-34" width="244" height="64" rx="32" fill="#ffffff"/>'
+            '<rect x="-122" y="-34" width="244" height="64" rx="32" fill="none" stroke="#000" stroke-opacity="0.08" stroke-width="4"/>'
+            '<circle cx="184" cy="-118" r="40" fill="#ffffff"/>'
+            '<circle cx="184" cy="-118" r="40" fill="none" stroke="#000" stroke-opacity="0.08" stroke-width="4"/>'
+            "</g>"]
+
 def svg(body, defs=""):
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">\n'
             + (f"  <defs>\n{defs}  </defs>\n" if defs else "")
@@ -117,7 +159,7 @@ def flat(p):
     # A hairline keeps the white tile from melting into light backgrounds.
     if p["edge"]:
         body.append(f'<rect x="102" y="102" width="820" height="820" rx="183" fill="none" stroke="#0b1f5c" stroke-opacity="{p["edge"]}" stroke-width="4"/>')
-    body += dial(p) + box(p)
+    body += snow(p) + dial(p) + box(p) + hat(p)
     return svg(body, defs)
 
 def srgb(hex_color):
@@ -130,7 +172,10 @@ def icon_composer(out):
     assets = os.path.join(out, "AppIcon.icon", "Assets")
     os.makedirs(assets, exist_ok=True)
     for mode, p in PALETTES.items():
-        for name, layer in (("dial", dial), ("box", box)):
+        layers = [("dial", lambda p: snow(p) + dial(p)), ("box", box)]
+        if CHRISTMAS:
+            layers.append(("hat", hat))
+        for name, layer in layers:
             with open(os.path.join(assets, f"{name}-{mode}.svg"), "w") as f:
                 f.write(svg(layer(p)))
     def gradient(mode):
@@ -151,7 +196,7 @@ def icon_composer(out):
             {"value": gradient("light")},
             {"appearance": "dark", "value": gradient("dark")},
         ],
-        "groups": [group("box"), group("dial")],   # front first
+        "groups": ([group("hat")] if CHRISTMAS else []) + [group("box"), group("dial")],   # front first
         "supported-platforms": {"squares": ["macOS"]},
     }
     with open(os.path.join(out, "AppIcon.icon", "icon.json"), "w") as f:
