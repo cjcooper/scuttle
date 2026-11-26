@@ -4,7 +4,7 @@
       "value": {
         "linear-gradient": [
           "srgb:1.00000,1.00000,1.00000,1.00000",
-          "srgb:0.86275,0.89804,0.94902,1.00000"
+          "srgb:0.85882,0.90980,0.94118,1.00000"
         ],
         "orientation": {
           "start": {
@@ -22,8 +22,8 @@
       "appearance": "dark",
       "value": {
         "linear-gradient": [
-          "srgb:0.16863,0.20392,0.27059,1.00000",
-          "srgb:0.05098,0.06667,0.09804,1.00000"
+          "srgb:0.13333,0.20392,0.29020,1.00000",
+          "srgb:0.04314,0.07059,0.10980,1.00000"
         ],
         "orientation": {
           "start": {
@@ -39,6 +39,31 @@
     }
   ],
   "groups": [
+    {
+      "layers": [
+        {
+          "name": "hat",
+          "image-name-specializations": [
+            {
+              "value": "hat-light.svg"
+            },
+            {
+              "appearance": "dark",
+              "value": "hat-dark.svg"
+            }
+          ],
+          "glass": true
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": true,
+        "value": 0.4
+      }
+    },
     {
       "layers": [
         {
