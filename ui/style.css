@@ -114,6 +114,25 @@ main { -webkit-user-select: text; user-select: text; }
 body.resizing { cursor: col-resize; }
 body.resizing main, body.resizing iframe { pointer-events: none; }
 .brand { font-weight: 700; letter-spacing: .02em; }
+/* Christmas (data-festive on <html> in index.html): a Santa hat on the name
+   and a string of lights along the bottom of the title bar, as in Subduer. */
+:root[data-festive] .titlebar { position: relative; }
+:root[data-festive] .brand { position: relative; }
+:root[data-festive] .brand::before {
+  content: ""; position: absolute; left: -7px; top: -11px; width: 18px; height: 15px;
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 32'><path d='M5 25C6 13 13 4 23 3c6 0 10 3 12 9-3-3-7-4-10-2 1 5 2 10 2 15z' fill='%23d62b33'/><rect x='2' y='22' width='28' height='8' rx='4' fill='%23fff' stroke='%23000' stroke-opacity='.15'/><circle cx='35' cy='13' r='4.5' fill='%23fff' stroke='%23000' stroke-opacity='.15'/></svg>") no-repeat center / contain;
+  transform: rotate(-18deg); pointer-events: none;
+}
+:root[data-festive] .titlebar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 5px; z-index: 31; pointer-events: none;
+  background:
+    radial-gradient(circle 2.5px at 9px 50%, #e5383b 98%, transparent) 0 0 / 54px 100% repeat-x,
+    radial-gradient(circle 2.5px at 27px 50%, #2fb36b 98%, transparent) 0 0 / 54px 100% repeat-x,
+    radial-gradient(circle 2.5px at 45px 50%, #f4b400 98%, transparent) 0 0 / 54px 100% repeat-x;
+  animation: festive-twinkle 3s ease-in-out infinite alternate;
+}
+@keyframes festive-twinkle { from { opacity: .65; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { :root[data-festive] .titlebar::after { animation: none; } }
 nav { display: flex; flex-direction: column; gap: 1px; padding: 0 8px 12px; }
 .nav {
   display: flex; align-items: center; gap: 9px;
